@@ -38,7 +38,7 @@ $top_performers = array_slice($rankings, 0, 3);
     <link rel="stylesheet" href="../assets/css/style.css?v=1774434222">
     <link rel="stylesheet" href="../assets/css/admin.css?v=1774434222">
     <style>
-        .leaderboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }
+        .leaderboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
         .performance-card { background: #fff; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--glass-border); position: relative; overflow: hidden; }
         .rank-badge { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
         .rank-1 { background: #fef3c7; color: #d97706; border: 2px solid #fbbf24; }
@@ -47,6 +47,12 @@ $top_performers = array_slice($rankings, 0, 3);
         .top-3-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
         .per-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
         .per-val { font-size: 1.2rem; font-weight: 700; color: var(--text-main); }
+        @media (max-width: 768px) {
+            .top-3-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+            .leaderboard-header { flex-direction: column; align-items: flex-start; }
+            .leaderboard-header form { width: 100%; }
+            .leaderboard-header input[type="month"] { width: 100%; }
+        }
     </style>
 </head>
 <body>

@@ -38,6 +38,11 @@ foreach ($branches as $b) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=1774434221">
     <link rel="stylesheet" href="../assets/css/admin.css?v=1774434221">
+    <style>
+        .rev-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+        @media (max-width: 768px) { .rev-stats { grid-template-columns: 1fr !important; } }
+        .page-header { flex-wrap: wrap; gap: 1rem; }
+    </style>
 </head>
 <body>
 <?php include 'includes/sidebar.php'; ?>
@@ -59,7 +64,7 @@ foreach ($branches as $b) {
             <p style="color:#64748b;">Franchise Revenue Report — Generated on <?= date('d M, Y') ?></p>
         </div>
 
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin-bottom:2.5rem;">
+    <div class="rev-stats">
         <div class="content-card" style="margin-bottom:0;display:flex;align-items:center;gap:1.5rem;background:linear-gradient(135deg,#f8faff,#fff);border-left:4px solid #3b82f6;">
             <div style="width:60px;height:60px;border-radius:12px;background:rgba(59,130,246,.1);display:flex;align-items:center;justify-content:center;font-size:1.8rem;">📈</div>
             <div>

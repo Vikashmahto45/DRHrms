@@ -121,6 +121,10 @@ $recent_payments = $pay_stmt->fetchAll();
 
         .two-col { display: grid; grid-template-columns: 1.7fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
         @media(max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+        @media(max-width: 768px) { 
+            .two-col { grid-template-columns: 1fr !important; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
 
         /* Branch table rows */
         .conv-bar-wrap { background: #f1f5f9; border-radius: 20px; height: 6px; width: 80px; display: inline-block; vertical-align: middle; margin-left: 6px; }

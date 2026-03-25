@@ -47,6 +47,9 @@ $company_performance = $stmt->fetchAll();
         .banner-card { background: #fff; padding: 2rem; border-radius: 16px; border: 1px solid var(--glass-border); text-align: center; }
         .banner-label { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .banner-val { font-size: 2.2rem; font-weight: 800; margin: 1rem 0; color: var(--text-main); }
+        @media (max-width: 768px) {
+            .stat-banner { grid-template-columns: 1fr !important; gap: 1rem !important; }
+        }
     </style>
 </head>
 <body>
