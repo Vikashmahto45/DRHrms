@@ -1,0 +1,266 @@
+Array
+(
+    [0] => Array
+        (
+            [Field] => id
+            [Type] => int(11)
+            [Null] => NO
+            [Key] => PRI
+            [Default] => 
+            [Extra] => auto_increment
+        )
+
+    [1] => Array
+        (
+            [Field] => name
+            [Type] => varchar(255)
+            [Null] => NO
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [2] => Array
+        (
+            [Field] => logo
+            [Type] => varchar(255)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [3] => Array
+        (
+            [Field] => status
+            [Type] => enum('active','inactive')
+            [Null] => YES
+            [Key] => 
+            [Default] => active
+            [Extra] => 
+        )
+
+    [4] => Array
+        (
+            [Field] => plan_id
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => MUL
+            [Default] => 1
+            [Extra] => 
+        )
+
+    [5] => Array
+        (
+            [Field] => created_at
+            [Type] => timestamp
+            [Null] => NO
+            [Key] => 
+            [Default] => current_timestamp()
+            [Extra] => 
+        )
+
+    [6] => Array
+        (
+            [Field] => subscription_end_date
+            [Type] => datetime
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [7] => Array
+        (
+            [Field] => user_limit
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => 
+            [Default] => 10
+            [Extra] => 
+        )
+
+    [8] => Array
+        (
+            [Field] => lead_limit
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => 
+            [Default] => 100
+            [Extra] => 
+        )
+
+    [9] => Array
+        (
+            [Field] => storage_limit_mb
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => 
+            [Default] => 500
+            [Extra] => 
+        )
+
+    [10] => Array
+        (
+            [Field] => last_login_at
+            [Type] => datetime
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [11] => Array
+        (
+            [Field] => office_lat
+            [Type] => decimal(10,8)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [12] => Array
+        (
+            [Field] => office_lng
+            [Type] => decimal(11,8)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [13] => Array
+        (
+            [Field] => radius_meters
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => 
+            [Default] => 100
+            [Extra] => 
+        )
+
+    [14] => Array
+        (
+            [Field] => allowed_ip
+            [Type] => varchar(45)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+)
+Array
+(
+    [0] => Array
+        (
+            [Field] => id
+            [Type] => int(11)
+            [Null] => NO
+            [Key] => PRI
+            [Default] => 
+            [Extra] => auto_increment
+        )
+
+    [1] => Array
+        (
+            [Field] => company_id
+            [Type] => int(11)
+            [Null] => NO
+            [Key] => MUL
+            [Default] => 
+            [Extra] => 
+        )
+
+    [2] => Array
+        (
+            [Field] => client_name
+            [Type] => varchar(255)
+            [Null] => NO
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [3] => Array
+        (
+            [Field] => phone
+            [Type] => varchar(20)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [4] => Array
+        (
+            [Field] => source
+            [Type] => enum('Manual','Meta Ads','Google Ads')
+            [Null] => YES
+            [Key] => 
+            [Default] => Manual
+            [Extra] => 
+        )
+
+    [5] => Array
+        (
+            [Field] => product
+            [Type] => varchar(100)
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [6] => Array
+        (
+            [Field] => status
+            [Type] => enum('new','contacted','follow-up','closed')
+            [Null] => YES
+            [Key] => 
+            [Default] => new
+            [Extra] => 
+        )
+
+    [7] => Array
+        (
+            [Field] => assigned_to
+            [Type] => int(11)
+            [Null] => YES
+            [Key] => MUL
+            [Default] => 
+            [Extra] => 
+        )
+
+    [8] => Array
+        (
+            [Field] => note
+            [Type] => text
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+    [9] => Array
+        (
+            [Field] => created_at
+            [Type] => timestamp
+            [Null] => NO
+            [Key] => 
+            [Default] => current_timestamp()
+            [Extra] => 
+        )
+
+    [10] => Array
+        (
+            [Field] => assigned_at
+            [Type] => datetime
+            [Null] => YES
+            [Key] => 
+            [Default] => 
+            [Extra] => 
+        )
+
+)
