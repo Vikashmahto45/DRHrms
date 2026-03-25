@@ -549,6 +549,24 @@ select.form-control option {
         white-space: nowrap;
     }
     
+    /* Hard-Overrides for Custom Inline Grids */
+    .stat-banner {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+    .announcement-form {
+        grid-template-columns: 1fr !important;
+    }
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .branch-stats {
+        grid-template-columns: 1fr !important;
+    }
+    .branch-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
     /* Floating Mobile Toggle for pages without Topbar */
     .floating-mobile-toggle {
         display: flex !important;
