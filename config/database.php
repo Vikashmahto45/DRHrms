@@ -27,16 +27,16 @@ if ($is_local) {
     // 🌐 LIVE PRODUCTION CREDENTIALS
     // You will only ever need to change these once when moving to the live cPanel/server.
     $host = 'localhost';
-    $dbname = 'your_live_db_name';
-    $username = 'your_live_db_user';
-    $password = 'your_live_db_password';
+    $dbname = 'u769307048_globalwebify';
+    $username = 'u769307048_globalwebify';
+    $password = 'Admin@12312332';
 }
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     die("Database Connection failed: " . $e->getMessage());
 }
 ?>
