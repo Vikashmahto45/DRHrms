@@ -36,8 +36,8 @@ foreach ($branches as $b) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Franchise Revenue - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774434221">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774434221">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774439732">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439732">
     <style>
         .rev-stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
         @media (max-width: 768px) { .rev-stats { grid-template-columns: 1fr !important; } }

@@ -91,8 +91,8 @@ $users = $usersQuery->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Main Branch (HQ) - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774434221">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774434221">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774439732">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439732">
     <style>
         .hq-banner { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden; }
         .hq-banner::after { content: '🏢'; font-size: 8rem; position: absolute; right: 2rem; top: 1rem; opacity: 0.05; }

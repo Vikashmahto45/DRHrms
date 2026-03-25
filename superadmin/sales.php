@@ -108,8 +108,8 @@ $recent_payments = $pay_stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sales Analytics - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774434222">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774434222">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774439732">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439732">
     <style>
         body { background: #f1f5f9; }
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }

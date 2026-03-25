@@ -128,8 +128,8 @@ function getSourceBadge($source) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($lead['client_name']) ?> - Profile | DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774434221">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774434221">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774439732">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439732">
     <style>
         .profile-container { display: grid; grid-template-columns: 350px 1fr; gap: 2rem; align-items: flex-start; }
         .sidebar-info { display: flex; flex-direction: column; gap: 1.5rem; }

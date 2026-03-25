@@ -31,8 +31,8 @@ $absent = max(0, $total_staff - $present);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daily Attendance - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774434221">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774434221">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774439731">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439731">
 </head>
 <body>
 <?php include 'includes/sidebar.php'; ?>
