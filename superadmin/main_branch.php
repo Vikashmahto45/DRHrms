@@ -96,10 +96,19 @@ $users = $usersQuery->fetchAll();
     <style>
         .hq-banner { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden; }
         .hq-banner::after { content: '🏢'; font-size: 8rem; position: absolute; right: 2rem; top: 1rem; opacity: 0.05; }
-        .hq-stat { display: flex; gap: 2rem; margin-top: 1.5rem; }
-        .hq-stat-item { background: rgba(255,255,255,0.05); padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .hq-stat { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
+        .hq-stat-item { background: rgba(255,255,255,0.05); padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); min-width: 0; flex: 1; }
         .hq-stat-item label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
         .hq-stat-item div { font-size: 1.5rem; font-weight: 700; color: #fff; }
+        .hq-link-input { background: transparent; border: none; color: #38bdf8; width: 100%; max-width: 300px; outline: none; font-family: monospace; min-width: 0; }
+        .hq-main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
+        @media (max-width: 768px) {
+            .hq-banner { padding: 1.5rem; }
+            .hq-stat { flex-direction: column; }
+            .hq-stat-item { padding: 0.8rem 1rem; }
+            .hq-link-input { max-width: 100%; font-size: 0.75rem; }
+            .hq-main-grid { grid-template-columns: 1fr !important; }
+        }
     </style>
 </head>
 <body>
@@ -132,8 +141,8 @@ $users = $usersQuery->fetchAll();
                 <?php 
                     $login_url = BASE_URL . 'login.php?company=' . urlencode($hq['login_slug']);
                 ?>
-                <div style="font-size:1rem; font-family:monospace; color:#38bdf8; display:flex; align-items:center; gap:10px;">
-                    <input type="text" id="hqLink" value="<?= htmlspecialchars($login_url) ?>" readonly style="background:transparent; border:none; color:#38bdf8; width:350px; outline:none;" onclick="this.select()">
+                <div style="font-size:1rem; font-family:monospace; color:#38bdf8; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <input type="text" id="hqLink" value="<?= htmlspecialchars($login_url) ?>" readonly class="hq-link-input" onclick="this.select()">
                     <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('hqLink').value); alert('Copied to clipboard!')" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.8rem;">Copy</button>
                     <a href="<?= htmlspecialchars($login_url) ?>" target="_blank" style="color:#10b981; font-size:0.85rem; text-decoration:none; margin-left:10px;">Open →</a>
                 </div>
@@ -141,7 +150,7 @@ $users = $usersQuery->fetchAll();
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+    <div class="hq-main-grid">
         
         <!-- Create Login Form -->
         <div class="content-card">
