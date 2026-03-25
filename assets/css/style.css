@@ -468,4 +468,14 @@ footer {
     .footer-brand p {
         margin: 1rem auto;
     }
+
+    .nav-actions {
+        gap: 0.5rem;
+    }
+
+    .nav-actions .btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
 }
