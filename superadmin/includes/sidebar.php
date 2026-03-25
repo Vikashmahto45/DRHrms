@@ -3,6 +3,9 @@
 // Shared Super Admin Sidebar - include on every SA page
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
+<div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
+<button class="floating-mobile-toggle" onclick="document.body.classList.toggle('sidebar-open')">☰</button>
+
 <aside class="sidebar">
     <div class="sidebar-header">
         <div class="logo">DR<span>Hrms</span></div>
@@ -54,3 +57,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="../logout.php?role=sa" class="btn btn-outline" style="width:100%;text-align:center;font-size:0.85rem;padding:0.5rem;">Logout</a>
     </div>
 </aside>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('table').forEach(table => {
+        if (!table.parentElement.classList.contains('table-responsive')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-responsive';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+    });
+});
+</script>

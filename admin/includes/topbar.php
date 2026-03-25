@@ -1,10 +1,15 @@
 <?php
 // /admin/includes/topbar.php
 ?>
+<div class="sidebar-overlay" onclick="document.body.classList.remove('sidebar-open')"></div>
+
 <header class="top-bar">
-    <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="globalSearch" placeholder="Search leads, staff, or tasks...">
+    <div style="display:flex; align-items:center; gap:15px;">
+        <button class="mobile-toggle" onclick="document.body.classList.toggle('sidebar-open')">☰</button>
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="globalSearch" placeholder="Search leads, staff...">
+        </div>
     </div>
     
     <div class="top-bar-actions">
@@ -243,6 +248,17 @@ async function checkNotifications() {
 
 // Check every 10 seconds
 setInterval(checkNotifications, 10000);
-document.addEventListener('DOMContentLoaded', checkNotifications);
+document.addEventListener('DOMContentLoaded', () => {
+    checkNotifications();
+    // Auto-wrap tables for mobile responsiveness
+    document.querySelectorAll('table').forEach(table => {
+        if (!table.parentElement.classList.contains('table-responsive')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-responsive';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+    });
+});
 </script>
 
