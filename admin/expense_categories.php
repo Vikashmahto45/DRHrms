@@ -42,8 +42,8 @@ $categories = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Expense Categories - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774439731">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439731">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
     <style>
         .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 2rem; }
         .category-item { background: #fff; padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }

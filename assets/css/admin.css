@@ -485,8 +485,17 @@ select.form-control option {
 }
 
 @media (max-width: 768px) {
+    /* === CORE MOBILE LAYOUT FIX === */
+    /* Override the desktop flex-row body so sidebar doesn't consume 260px */
+    body {
+        display: block !important;
+        overflow-x: hidden;
+    }
+    
     /* Main Layout */
     .sidebar {
+        position: fixed !important;
+        height: 100vh !important;
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 9999;
@@ -504,6 +513,7 @@ select.form-control option {
     
     .main-wrapper {
         margin-left: 0 !important;
+        width: 100% !important;
     }
     
     /* Topbar adjustments */

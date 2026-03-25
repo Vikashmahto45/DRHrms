@@ -44,8 +44,8 @@ foreach($leaves as $l) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Profile - <?= htmlspecialchars($staff['name']) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774439732">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774439732">
+    <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
     <style>
         .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-top: 1rem; }
         .info-section { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem; }
