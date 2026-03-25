@@ -550,21 +550,23 @@ select.form-control option {
     }
     
     /* Hard-Overrides for Custom Inline Grids */
-    .stat-banner {
+    .stat-banner, 
+    .announcement-form, 
+    .branch-stats, 
+    .branch-grid, 
+    .payout-stats, 
+    .top-3-grid, 
+    .kpi-grid, 
+    .two-col, 
+    .profile-grid, 
+    .stats-mini, 
+    .profile-container {
         grid-template-columns: 1fr !important;
         gap: 1rem !important;
     }
-    .announcement-form {
-        grid-template-columns: 1fr !important;
-    }
+    
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
-    }
-    .branch-stats {
-        grid-template-columns: 1fr !important;
-    }
-    .branch-grid {
-        grid-template-columns: 1fr !important;
     }
     
     /* Floating Mobile Toggle for pages without Topbar */
