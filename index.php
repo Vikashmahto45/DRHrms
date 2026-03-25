@@ -7,8 +7,8 @@
     <title>DRHrms - State of the Art HR & CRM SaaS</title>
     <meta name="description" content="The ultimate Multi-Tenant HRMS and Lead Management SaaS for modern agencies and enterprises.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Using our new standalone premium landing page styling -->
-    <link rel="stylesheet" href="assets/css/landing.css">
+    <!-- Using our new standalone premium landing page styling with cache busting -->
+    <link rel="stylesheet" href="assets/css/landing.css?v=2.2">
     <script>
         // Simple script for navbar scroll effect
         window.addEventListener('scroll', () => {
@@ -34,7 +34,7 @@
                 <li><a href="#features">Platform Features</a></li>
                 <li><a href="how-it-works.php">How It Works</a></li>
             </ul>
-            <div style="display: flex; gap: 1rem;">
+            <div class="nav-actions">
                 <a href="login.php" class="btn btn-outline">Sign In</a>
                 <a href="#contact" class="btn btn-primary">Request Access</a>
             </div>
@@ -47,9 +47,9 @@
             <div class="hero-content">
                 <h1>Empower Your Enterprise with <br><class><span class="text-gradient">Intelligent HR & CRM</span></h1>
                 <p>An elite, unified platform designed to manage your workforce, track attendance via GPS, close CRM leads faster, and oversee multiple franchise branches with pinpoint accuracy.</p>
-                <div style="display:flex; justify-content:center; gap:1.5rem; margin-top:2rem;">
-                    <a href="#contact" class="btn btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Start Free Concierge Setup</a>
-                    <a href="#features" class="btn btn-outline" style="padding: 1rem 2.5rem; font-size: 1.1rem;">Explore Features</a>
+                <div class="hero-actions">
+                    <a href="#contact" class="btn btn-primary">Start Free Concierge Setup</a>
+                    <a href="#features" class="btn btn-outline">Explore Features</a>
                 </div>
             </div>
 
