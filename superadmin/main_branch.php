@@ -94,20 +94,22 @@ $users = $usersQuery->fetchAll();
     <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
     <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
     <style>
-        .hq-banner { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden; }
-        .hq-banner::after { content: '🏢'; font-size: 8rem; position: absolute; right: 2rem; top: 1rem; opacity: 0.05; }
-        .hq-stat { display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap; }
-        .hq-stat-item { background: rgba(255,255,255,0.05); padding: 1rem 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); min-width: 0; flex: 1; }
-        .hq-stat-item label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .hq-stat-item div { font-size: 1.5rem; font-weight: 700; color: #fff; }
-        .hq-link-input { background: transparent; border: none; color: #38bdf8; width: 100%; max-width: 300px; outline: none; font-family: monospace; min-width: 0; }
-        .hq-main-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; }
-        @media (max-width: 768px) {
-            .hq-banner { padding: 1.5rem; }
-            .hq-stat { flex-direction: column; }
-            .hq-stat-item { padding: 0.8rem 1rem; }
-            .hq-link-input { max-width: 100%; font-size: 0.75rem; }
-            .hq-main-grid { grid-template-columns: 1fr !important; }
+        .hq-banner { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .hq-stat { display: flex; gap: 0.8rem; margin-top: 1.2rem; flex-wrap: wrap; }
+        .hq-stat-item { background: rgba(255,255,255,0.06); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); flex: 1; min-width: 120px; }
+        .hq-stat-item label { display: block; font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .hq-stat-item .stat-val { font-size: 1.4rem; font-weight: 700; color: #fff; }
+        .hq-link-box { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .hq-link-input { background: transparent; border: none; color: #38bdf8; flex: 1; min-width: 0; outline: none; font-family: monospace; font-size: 0.8rem; }
+
+        /* Mobile-first: form and table stack vertically */
+        .hq-layout { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        /* Side-by-side only on large screens */
+        @media (min-width: 900px) {
+            .hq-layout { flex-direction: row; align-items: flex-start; }
+            .hq-form-col { width: 320px; flex-shrink: 0; }
+            .hq-table-col { flex: 1; min-width: 0; }
         }
     </style>
 </head>
@@ -134,25 +136,24 @@ $users = $usersQuery->fetchAll();
         <div class="hq-stat">
             <div class="hq-stat-item">
                 <label>Active Logins</label>
-                <div><?= count($users) ?></div>
+                <div class="stat-val"><?= count($users) ?></div>
             </div>
             <div class="hq-stat-item">
                 <label>HQ Login Link</label>
-                <?php 
-                    $login_url = BASE_URL . 'login.php?company=' . urlencode($hq['login_slug']);
-                ?>
-                <div style="font-size:1rem; font-family:monospace; color:#38bdf8; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <?php $login_url = BASE_URL . 'login.php?company=' . urlencode($hq['login_slug']); ?>
+                <div class="hq-link-box">
                     <input type="text" id="hqLink" value="<?= htmlspecialchars($login_url) ?>" readonly class="hq-link-input" onclick="this.select()">
-                    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('hqLink').value); alert('Copied to clipboard!')" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.8rem;">Copy</button>
-                    <a href="<?= htmlspecialchars($login_url) ?>" target="_blank" style="color:#10b981; font-size:0.85rem; text-decoration:none; margin-left:10px;">Open →</a>
+                    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('hqLink').value); alert('Copied!')" style="background:rgba(56,189,248,0.2); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:3px 8px; border-radius:6px; cursor:pointer; font-size:0.75rem; white-space:nowrap;">Copy</button>
+                    <a href="<?= htmlspecialchars($login_url) ?>" target="_blank" style="color:#10b981; font-size:0.8rem; white-space:nowrap;">Open →</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="hq-main-grid">
+    <div class="hq-layout">
         
         <!-- Create Login Form -->
+        <div class="hq-form-col">
         <div class="content-card">
             <div class="card-header">
                 <h3>Add HQ Staff Login</h3>
@@ -186,10 +187,11 @@ $users = $usersQuery->fetchAll();
                 
                 <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Create Workspace Login</button>
             </form>
-        </div>
+        </div><!-- /hq-form-col -->
 
         <!-- Existing Logins List -->
-        <div class="content-card" style="grid-column: 2 / 3;">
+        <div class="hq-table-col">
+        <div class="content-card">
             <div class="card-header">
                 <h3>Current HQ Team</h3>
             </div>
@@ -245,9 +247,10 @@ $users = $usersQuery->fetchAll();
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div><!-- /content-card -->
+        </div><!-- /hq-table-col -->
 
-    </div>
+    </div><!-- /hq-layout -->
 </main>
 </body>
 </html>
