@@ -106,9 +106,9 @@ $users = $usersQuery->fetchAll();
         .hq-layout { display: flex; flex-direction: column; gap: 1.5rem; }
 
         /* Side-by-side only on large screens */
-        @media (min-width: 900px) {
+        @media (min-width: 769px) {
             .hq-layout { flex-direction: row; align-items: flex-start; }
-            .hq-form-col { width: 320px; flex-shrink: 0; }
+            .hq-form-col { width: 300px; flex-shrink: 0; }
             .hq-table-col { flex: 1; min-width: 0; }
         }
     </style>
