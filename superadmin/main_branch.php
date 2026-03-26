@@ -187,6 +187,7 @@ $users = $usersQuery->fetchAll();
                 
                 <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">Create Workspace Login</button>
             </form>
+        </div><!-- /content-card -->
         </div><!-- /hq-form-col -->
 
         <!-- Existing Logins List -->
