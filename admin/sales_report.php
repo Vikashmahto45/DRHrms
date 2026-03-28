@@ -23,7 +23,8 @@ $stmt = $pdo->prepare("
         d.*, 
         u.name as staff_name, 
         p.name as product_name, 
-        c.name as branch_name 
+        c.name as branch_name,
+        c.id as branch_id
     FROM dsr d
     JOIN users u ON d.user_id = u.id
     LEFT JOIN products p ON d.product_id = p.id
@@ -112,7 +113,13 @@ foreach ($sales as $s) {
                             </td>
                             <td style="font-weight:700; color:#10b981;">₹<?= number_format($s['sold_price'], 2) ?></td>
                             <td><?= htmlspecialchars($s['staff_name']) ?></td>
-                            <td><span style="font-size:0.85rem; color:var(--text-muted);"><?= htmlspecialchars($s['branch_name'] ?? 'Main') ?></span></td>
+                            <td>
+                                <?php if ($s['branch_id'] == $cid): ?>
+                                    <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">🏠 Main Office (HQ)</span>
+                                <?php else: ?>
+                                    <span style="font-size:0.85rem; background:#eef2ff; color:#4f46e5; padding:3px 8px; border-radius:6px; font-weight:600;">🏢 <?= htmlspecialchars($s['branch_name']) ?></span>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                         <?php if (empty($sales)): ?>

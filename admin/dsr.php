@@ -205,7 +205,10 @@ foreach ($reports as $r) {
                                             <div>
                                                 <strong style="color:var(--primary-color); font-size:1rem;"><?= htmlspecialchars($v['visit_purpose']) ?></strong>
                                                 <?php if($role !== 'sales_person'): ?>
-                                                    <span style="font-size:0.75rem; color:var(--text-muted); margin-left:10px;">👤 Ref: <?= htmlspecialchars($v['staff_name']) ?></span>
+                                                    <div style="margin-top:4px;">
+                                                        <span style="font-size:0.75rem; color:var(--text-muted);">👤 Agent: <?= htmlspecialchars($v['staff_name']) ?></span>
+                                                        <span style="font-size:0.75rem; background:#f1f5f9; color:#6366f1; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:600;">🏢 Branch: <?= htmlspecialchars($v['company_name']) ?></span>
+                                                    </div>
                                                 <?php endif; ?>
                                                 <?php if ($v['product_name']): ?>
                                                     <div style="font-size:0.85rem; color:#6366f1; font-weight:600; margin-top:4px;">📦 Product: <?= htmlspecialchars($v['product_name']) ?></div>
