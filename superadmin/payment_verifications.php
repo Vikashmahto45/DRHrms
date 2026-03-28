@@ -150,7 +150,14 @@ if ($role === 'super_admin') {
             </a>
         </div>
         <div class="data-box">
-            <h3 style="margin-bottom:0.5rem;"><?= htmlspecialchars($p['company_name']) ?></h3>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.8rem;">
+                <h3 style="margin:0;"><?= htmlspecialchars($p['company_name']) ?></h3>
+                <?php if ($p['company_id'] == $cid): ?>
+                    <span style="font-size:0.75rem; background:#f8fafc; color:#64748b; padding:2px 8px; border-radius:4px; font-weight:600; border:1px solid #e2e8f0;">🏠 HQ</span>
+                <?php else: ?>
+                    <span style="font-size:0.75rem; background:#eef2ff; color:#4f46e5; padding:2px 8px; border-radius:4px; font-weight:600;">🏢 Sub-Branch</span>
+                <?php endif; ?>
+            </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div>
                     <label style="font-size:0.8rem; color:var(--text-muted)">Client</label>
