@@ -2,36 +2,38 @@
 // /superadmin/finance_stats.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess('super_admin');
+
+$role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
+$cid = (int)($_SESSION['company_id'] ?? 0);
+
+if ($role === 'super_admin') {
+    $branch_ids = []; // Super Admin sees overall system
+} else {
+    checkAccess(['admin']);
+    $stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+    $stmt->execute([$cid]);
+    if ($stmt->fetchColumn() == 0) {
+        die("Access Denied: You do not have global financial oversight.");
+    }
+    $branch_ids = getAccessibleBranchIds($pdo, $cid);
+}
+
+$cids_in = !empty($branch_ids) ? implode(',', $branch_ids) : 'all';
 
 // 1. Global Summaries
-$stmt = $pdo->prepare("
-    SELECT 
-        SUM(amount) as global_sales,
-        SUM(admin_cut) as total_commissions,
-        SUM(franchise_share) as total_franchise_payouts,
-        COUNT(id) as total_transactions
-    FROM franchise_payments 
-    WHERE status = 'approved'
-");
-$stmt->execute();
-$totals = $stmt->fetch();
+$sql = "SELECT SUM(amount) as global_sales, SUM(admin_cut) as total_commissions, SUM(franchise_share) as total_franchise_payouts, COUNT(id) as total_transactions FROM franchise_payments WHERE status = 'approved'";
+if ($cids_in !== 'all') {
+    $sql .= " AND company_id IN ($cids_in)";
+}
+$totals = $pdo->query($sql)->fetch();
 
 // 2. Performance by Company
-$stmt = $pdo->prepare("
-    SELECT 
-        c.name as company_name, 
-        SUM(p.amount) as total_generated,
-        SUM(p.admin_cut) as commission_earned,
-        COUNT(p.id) as approved_count
-    FROM franchise_payments p
-    JOIN companies c ON p.company_id = c.id
-    WHERE p.status = 'approved'
-    GROUP BY c.id
-    ORDER BY total_generated DESC
-");
-$stmt->execute();
-$company_performance = $stmt->fetchAll();
+$sql2 = "SELECT c.name as company_name, SUM(p.amount) as total_generated, SUM(p.admin_cut) as commission_earned, COUNT(p.id) as approved_count FROM franchise_payments p JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved'";
+if ($cids_in !== 'all') {
+    $sql2 .= " AND p.company_id IN ($cids_in)";
+}
+$sql2 .= " GROUP BY c.id ORDER BY total_generated DESC";
+$company_performance = $pdo->query($sql2)->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">

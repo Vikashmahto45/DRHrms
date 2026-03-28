@@ -59,6 +59,9 @@ if ($cid > 0) {
                 <a href="<?= BASE_URL ?>admin/manage_branches.php" class="nav-item <?= $current_page==='manage_branches.php'?'active':'' ?>">
                     <span class="nav-icon">🏢</span> Manage Branches
                 </a>
+                <a href="<?= BASE_URL ?>superadmin/finance_stats.php" class="nav-item <?= $current_page==='finance_stats.php'?'active':'' ?>">
+                    <span class="nav-icon">📊</span> Global Revenue
+                </a>
                 <a href="<?= BASE_URL ?>superadmin/payment_verifications.php" class="nav-item <?= $current_page==='payment_verifications.php'?'active':'' ?>">
                     <span class="nav-icon">🛡️</span> Verify Payments (Branches)
                 </a>
