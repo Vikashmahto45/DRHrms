@@ -15,8 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price = (float)($_POST['price'] ?? 0);
         
         if ($name) {
-            $stmt = $pdo->prepare("INSERT INTO products (company_id, name, price) VALUES (?, ?, ?)");
-            if ($stmt->execute([$cid, $name, $price])) {
+            $description = trim($_POST['description'] ?? '');
+            $stmt = $pdo->prepare("INSERT INTO products (company_id, name, price, description) VALUES (?, ?, ?, ?)");
+            if ($stmt->execute([$cid, $name, $price, $description])) {
                 $msg = "Service/Product created successfully."; $msgType = "success";
             }
         }
@@ -27,8 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = trim($_POST['name'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         if ($name) {
-            $stmt = $pdo->prepare("UPDATE products SET name = ?, price = ? WHERE id = ? AND company_id = ?");
-            if ($stmt->execute([$name, $price, $id, $cid])) {
+            $description = trim($_POST['description'] ?? '');
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, price = ?, description = ? WHERE id = ? AND company_id = ?");
+            if ($stmt->execute([$name, $price, $description, $id, $cid])) {
                 $msg = "Service/Product updated successfully."; $msgType = "success";
             }
         }
@@ -86,10 +88,15 @@ $products = $stmt->fetchAll();
             <tbody>
                 <?php foreach ($products as $p): ?>
                 <tr>
-                    <td><strong><?= htmlspecialchars($p['name']) ?></strong></td>
+                    <td>
+                        <strong><?= htmlspecialchars($p['name']) ?></strong>
+                        <?php if ($p['description']): ?>
+                            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; max-width:400px;"><?= nl2br(htmlspecialchars($p['description'])) ?></div>
+                        <?php endif; ?>
+                    </td>
                     <td style="color:#10b981; font-weight:600;">₹<?= number_format($p['price'], 2) ?></td>
                     <td style="text-align:right">
-                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>)">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure?');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $p['id'] ?>">
@@ -123,6 +130,10 @@ $products = $stmt->fetchAll();
                 <label class="form-label">Base Price (₹)</label>
                 <input type="number" step="0.01" name="price" class="form-control" required>
             </div>
+            <div class="form-group">
+                <label class="form-label">Product Detail / Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Additional details about this product..."></textarea>
+            </div>
             <button type="submit" class="btn btn-primary" style="width:100%">Save Service</button>
         </form>
     </div>
@@ -144,16 +155,21 @@ $products = $stmt->fetchAll();
                 <label class="form-label">Base Price (₹)</label>
                 <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required>
             </div>
+            <div class="form-group">
+                <label class="form-label">Product Detail / Description</label>
+                <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
+            </div>
             <button type="submit" class="btn btn-primary" style="width:100%">Update Service</button>
         </form>
     </div>
 </div>
 
 <script>
-function editP(id, name, price) {
+function editP(id, name, price, desc) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_price').value = price;
+    document.getElementById('edit_description').value = desc;
     document.getElementById('editModal').classList.add('open');
 }
 </script>
