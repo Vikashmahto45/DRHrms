@@ -55,7 +55,13 @@ $company_performance = $pdo->query($sql2)->fetchAll();
     </style>
 </head>
 <body>
-<?php include 'includes/sidebar.php'; ?>
+<?php
+if ($role === 'super_admin') {
+    include 'includes/sidebar.php';
+} else {
+    include '../admin/includes/sidebar.php';
+}
+?>
 <main class="main-content">
     <div class="page-header">
         <h1>Global Financial Overview</h1>
