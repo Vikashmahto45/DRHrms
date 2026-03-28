@@ -39,9 +39,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="admins.php" class="nav-item <?= $current_page === 'admins.php' ? 'active' : '' ?>">
             <span class="nav-icon">👨‍💼</span> Manage Admins
         </a>
-        <a href="expiry_alerts.php" class="nav-item <?= $current_page === 'expiry_alerts.php' ? 'active' : '' ?>">
-            <span class="nav-icon">⚠️</span> Expiry Alerts
-        </a>
         <a href="settings.php" class="nav-item <?= $current_page === 'settings.php' ? 'active' : '' ?>">
             <span class="nav-icon">⚙️</span> System Settings
         </a>
