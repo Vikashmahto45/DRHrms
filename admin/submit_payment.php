@@ -7,9 +7,22 @@ checkAccess('admin');
 $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
+// Auto-patch for product tracking in payments
+try {
+    $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER client_name");
+} catch (Exception $e) {
+    try { $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN product_id INT NULL DEFAULT NULL AFTER client_name"); } catch(Exception $ex){}
+}
+
+// Fetch products for dropdown
+$stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
+$stmt->execute([$cid]);
+$products = $stmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $amount = (float)$_POST['amount'];
     $client = trim($_POST['client_name']);
+    $product_id = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
     $date = $_POST['payment_date'];
     $category = $_POST['category'];
     $proof = $_FILES['proof_file'] ?? null;
@@ -21,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (move_uploaded_file($proof['tmp_name'], $target)) {
             try {
-                $stmt = $pdo->prepare("INSERT INTO franchise_payments (company_id, amount, client_name, category, payment_date, proof_file, status) VALUES (?,?,?,?,?,?,'pending')");
-                $stmt->execute([$cid, $amount, $client, $category, $date, $filename]);
+                $stmt = $pdo->prepare("INSERT INTO franchise_payments (company_id, amount, client_name, product_id, category, payment_date, proof_file, status) VALUES (?,?,?,?,?,?,?, 'pending')");
+                $stmt->execute([$cid, $amount, $client, $product_id, $category, $date, $filename]);
                 
                 logActivity('payment_submitted', "Submitted payment: $amount for $client", $cid);
                 $msg = "Payment submitted successfully! Waiting for verification.";
@@ -42,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch my recent submissions
-$stmt = $pdo->prepare("SELECT * FROM franchise_payments WHERE company_id = ? ORDER BY created_at DESC LIMIT 10");
+$stmt = $pdo->prepare("SELECT f.*, p.name as product_name FROM franchise_payments f LEFT JOIN products p ON f.product_id = p.id WHERE f.company_id = ? ORDER BY f.created_at DESC LIMIT 10");
 $stmt->execute([$cid]);
 $recent_payments = $stmt->fetchAll();
 
@@ -112,6 +125,18 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                     <label>Client Name *</label>
                     <input type="text" name="client_name" class="form-control" required placeholder="John Smith">
                 </div>
+                <div class="form-group">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <label style="margin-bottom:0;">Related Product/Service</label>
+                        <a href="settings_products.php" style="font-size:0.75rem; color:var(--primary-color); text-decoration:none; font-weight:600;">+ Manage Catalog</a>
+                    </div>
+                    <select name="product_id" class="form-control">
+                        <option value="">-- No specific product --</option>
+                        <?php foreach($products as $p): ?>
+                            <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> (₹<?= number_format($p['price'], 0) ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Category</label>
@@ -147,7 +172,11 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                     <tbody>
                         <?php foreach($recent_payments as $p): ?>
                         <tr>
-                            <td><strong><?= htmlspecialchars($p['client_name']) ?></strong><br><small><?= $p['category'] ?></small></td>
+                            <td>
+                                <strong><?= htmlspecialchars($p['client_name']) ?></strong><br>
+                                <small><?= $p['category'] ?></small>
+                                <?php if ($p['product_name']): ?><br><small style="color:var(--primary-color)">📦 <?= htmlspecialchars($p['product_name']) ?></small><?php endif; ?>
+                            </td>
                             <td>₹<?= number_format($p['amount'], 2) ?></td>
                             <td><span class="badge badge-<?= $p['status'] ?>"><?= ucfirst($p['status']) ?></span></td>
                             <td style="font-size:0.8rem; color:var(--text-muted)"><?= date('M d, H:i', strtotime($p['created_at'])) ?></td>

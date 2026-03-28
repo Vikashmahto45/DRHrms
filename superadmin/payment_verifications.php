@@ -77,9 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch Pending Payments based on Role
 if ($role === 'super_admin') {
     $stmt = $pdo->prepare("
-        SELECT p.*, c.name as company_name 
+        SELECT p.*, c.name as company_name, pr.name as product_name 
         FROM franchise_payments p 
         JOIN companies c ON p.company_id = c.id 
+        LEFT JOIN products pr ON p.product_id = pr.id
         WHERE p.status = 'pending' 
         ORDER BY p.created_at DESC
     ");
@@ -87,9 +88,10 @@ if ($role === 'super_admin') {
 } else {
     // Main Admin: Only see payments from SUB-BRANCHES assigned to them
     $stmt = $pdo->prepare("
-        SELECT p.*, c.name as company_name 
+        SELECT p.*, c.name as company_name, pr.name as product_name 
         FROM franchise_payments p 
         JOIN companies c ON p.company_id = c.id 
+        LEFT JOIN products pr ON p.product_id = pr.id
         WHERE p.status = 'pending' AND c.parent_id = ?
         ORDER BY p.created_at DESC
     ");
@@ -164,6 +166,10 @@ if ($role === 'super_admin') {
                 <div>
                     <label style="font-size:0.8rem; color:var(--text-muted)">Payment Date</label>
                     <div><?= date('M d, Y', strtotime($p['payment_date'])) ?></div>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size:0.8rem; color:var(--text-muted)">Associated Product</label>
+                    <div style="font-weight:600; color:#6366f1;"><?= htmlspecialchars($p['product_name'] ?? 'General/Other') ?></div>
                 </div>
             </div>
 

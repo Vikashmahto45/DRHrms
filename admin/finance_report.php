@@ -20,7 +20,13 @@ $stmt->execute([$cid]);
 $stats = $stmt->fetch();
 
 // 2. Recent Ledger
-$stmt = $pdo->prepare("SELECT * FROM franchise_payments WHERE company_id = ? ORDER BY created_at DESC");
+$stmt = $pdo->prepare("
+    SELECT f.*, p.name as product_name 
+    FROM franchise_payments f 
+    LEFT JOIN products p ON f.product_id = p.id 
+    WHERE f.company_id = ? 
+    ORDER BY f.created_at DESC
+");
 $stmt->execute([$cid]);
 $ledger = $stmt->fetchAll();
 ?>
@@ -80,7 +86,10 @@ $ledger = $stmt->fetchAll();
             <tbody>
                 <?php foreach($ledger as $l): ?>
                 <tr>
-                    <td><strong><?= htmlspecialchars($l['client_name']) ?></strong></td>
+                    <td>
+                        <strong><?= htmlspecialchars($l['client_name']) ?></strong>
+                        <?php if ($l['product_name']): ?><br><small style="color:var(--primary-color)">📦 <?= htmlspecialchars($l['product_name']) ?></small><?php endif; ?>
+                    </td>
                     <td>₹<?= number_format($l['amount'], 2) ?></td>
                     <td style="font-weight:600; color:#10b981;">₹<?= $l['status']==='approved' ? number_format($l['franchise_share'], 2) : '-' ?></td>
                     <td style="color:var(--text-muted);">₹<?= $l['status']==='approved' ? number_format($l['admin_cut'], 2) : '-' ?></td>
