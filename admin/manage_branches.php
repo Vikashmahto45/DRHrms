@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ── Fetch Branches ──────────────────────────────────────────────────
-$branches = $pdo->prepare("
+$branches = $pdo->query("
     SELECT c.*, COUNT(u.id) AS user_count 
     FROM companies c 
     LEFT JOIN users u ON c.id = u.company_id 
@@ -79,7 +79,6 @@ $branches = $pdo->prepare("
     GROUP BY c.id 
     ORDER BY c.created_at DESC
 ");
-$branches->execute([$cid]);
 $branchList = $branches->fetchAll();
 ?>
 <!DOCTYPE html>
