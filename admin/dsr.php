@@ -12,10 +12,15 @@ $cids_in = implode(',', $branch_ids);
 
 $msg = ''; $msgType = '';
 
-// DB Schema Auto-patch for deal_status
+// DB Schema Auto-patch for deal_status and sales fields
 try {
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN deal_status VARCHAR(50) DEFAULT 'In Progress' AFTER visit_purpose");
-} catch (Exception $e) { /* Column already exists */ }
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS deal_status VARCHAR(50) DEFAULT 'In Progress' AFTER visit_purpose");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER user_id");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status");
+} catch (Exception $e) { /* Fallback for older MySQL without IF NOT EXISTS */
+    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN product_id INT NULL DEFAULT NULL AFTER user_id"); } catch(Exception $ex){}
+    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status"); } catch(Exception $ex){}
+}
 
 // Fetch products for dropdown
 $stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");

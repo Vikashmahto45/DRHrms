@@ -5,6 +5,15 @@ require_once '../config/database.php';
 checkAccess(['admin', 'manager']);
 
 $cid = $_SESSION['company_id'];
+
+// Auto-patch check for live server
+try {
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER user_id");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status");
+} catch (Exception $e) {
+    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN product_id INT NULL DEFAULT NULL AFTER user_id"); } catch(Exception $ex){}
+    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status"); } catch(Exception $ex){}
+}
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
