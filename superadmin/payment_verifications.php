@@ -2,16 +2,18 @@
 // /superadmin/payment_verifications.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-// Custom check for roles
+
+// Allow Super Admin OR Main Branch Admin
+// session_start() already called in auth.php
 $role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
 $cid = (int)($_SESSION['company_id'] ?? 0);
 
-if ($role !== 'super_admin' && $role !== 'admin') {
-    header("Location: ../login.php"); exit();
-}
-
-// If admin, double check they are a main branch
-if ($role === 'admin') {
+if ($role === 'super_admin') {
+    // Super Admin sees all
+    $accessible_branches = []; 
+} else {
+    // Check if main branch admin
+    checkAccess(['admin']);
     $stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
     $stmt->execute([$cid]);
     if ($stmt->fetchColumn() == 0) {

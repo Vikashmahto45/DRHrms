@@ -15,9 +15,8 @@ function getAccessibleBranchIds($pdo, $company_id) {
         $stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
         $stmt->execute([$company_id]);
         if ($stmt->fetchColumn() == 1) {
-            // Fetch children
-            $childStmt = $pdo->prepare("SELECT id FROM companies WHERE parent_id = ?");
-            $childStmt->execute([$company_id]);
+            // HQ Admin: Act as Global Admin - see ALL sub-branches
+            $childStmt = $pdo->query("SELECT id FROM companies WHERE is_main_branch = 0");
             foreach($childStmt->fetchAll() as $row) {
                 $ids[] = (int)$row['id'];
             }

@@ -75,7 +75,7 @@ $branches = $pdo->prepare("
     SELECT c.*, COUNT(u.id) AS user_count 
     FROM companies c 
     LEFT JOIN users u ON c.id = u.company_id 
-    WHERE c.parent_id = ? 
+    WHERE c.is_main_branch = 0 
     GROUP BY c.id 
     ORDER BY c.created_at DESC
 ");

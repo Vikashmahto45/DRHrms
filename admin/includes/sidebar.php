@@ -62,6 +62,9 @@ if ($cid > 0) {
                 <a href="<?= BASE_URL ?>superadmin/payment_verifications.php" class="nav-item <?= $current_page==='payment_verifications.php'?'active':'' ?>">
                     <span class="nav-icon">🛡️</span> Verify Payments (Branches)
                 </a>
+                <a href="<?= BASE_URL ?>admin/sales_report.php" class="nav-item <?= $current_page==='sales_report.php'?'active':'' ?>">
+                    <span class="nav-icon">📈</span> Global Sales Report
+                </a>
             <?php endif; ?>
             <?php if (isModuleEnabled('hrms')): ?>
                 <!-- HRMS Dropdown -->
