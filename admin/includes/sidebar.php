@@ -38,6 +38,11 @@ if ($cid > 0) {
             <a href="<?= BASE_URL ?>admin/dsr.php" class="nav-item <?= $current_page==='dsr.php'?'active':'' ?>">
                 <span class="nav-icon">📝</span> <?= $role === 'admin' ? 'DSR Reports' : 'Daily Report (DSR)' ?>
             </a>
+            <?php if ($role === 'admin' || $role === 'manager'): ?>
+                <a href="<?= BASE_URL ?>admin/sales_report.php" class="nav-item <?= $current_page==='sales_report.php'?'active':'' ?>">
+                    <span class="nav-icon">📈</span> Sales Report
+                </a>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php if ($role === 'super_admin'): ?>

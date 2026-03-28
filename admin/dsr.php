@@ -17,11 +17,18 @@ try {
     $pdo->exec("ALTER TABLE dsr ADD COLUMN deal_status VARCHAR(50) DEFAULT 'In Progress' AFTER visit_purpose");
 } catch (Exception $e) { /* Column already exists */ }
 
+// Fetch products for dropdown
+$stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
+$stmt->execute([$cid]);
+$all_products = $stmt->fetchAll();
+
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
     $client = trim($_POST['client_name'] ?? '');
     $purpose = trim($_POST['visit_purpose'] ?? '');
     $deal_status = trim($_POST['deal_status'] ?? 'In Progress');
+    $product_id = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
+    $sold_price = !empty($_POST['sold_price']) ? (float)$_POST['sold_price'] : null;
     $notes = trim($_POST['notes'] ?? '');
     $lat = $_POST['latitude'] ?? '';
     $lng = $_POST['longitude'] ?? '';
@@ -44,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         try {
-            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, visit_purpose, deal_status, visit_photo, notes, latitude, longitude, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$uid, $cid, $client, $purpose, $deal_status, $photo_path, $notes, $lat, $lng, $date]);
+            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, visit_purpose, deal_status, product_id, sold_price, visit_photo, notes, latitude, longitude, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$uid, $cid, $client, $purpose, $deal_status, $product_id, $sold_price, $photo_path, $notes, $lat, $lng, $date]);
             $msg = "DSR submitted and client timeline updated successfully!"; $msgType = 'success';
         } catch (Exception $e) {
             $msg = "Error: " . $e->getMessage(); $msgType = 'error';
@@ -65,11 +72,11 @@ if ($role === 'sales_person') {
 
 // Fetch Reports
 if ($role === 'sales_person') {
-    $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
+    $stmt = $pdo->prepare("SELECT d.*, p.name as product_name FROM dsr d LEFT JOIN products p ON d.product_id = p.id WHERE d.user_id = ? ORDER BY d.visit_date DESC, d.created_at DESC");
     $stmt->execute([$uid]);
 } else {
     // Admins see all reports for the company and sub-branches
-    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name FROM dsr d JOIN users u ON d.user_id = u.id LEFT JOIN companies c ON d.company_id = c.id WHERE d.company_id IN ($cids_in) ORDER BY d.visit_date DESC, d.created_at DESC");
+    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name, p.name as product_name FROM dsr d JOIN users u ON d.user_id = u.id LEFT JOIN companies c ON d.company_id = c.id LEFT JOIN products p ON d.product_id = p.id WHERE d.company_id IN ($cids_in) ORDER BY d.visit_date DESC, d.created_at DESC");
     $stmt->execute();
 }
 $reports = $stmt->fetchAll();
@@ -195,6 +202,12 @@ foreach ($reports as $r) {
                                                 <?php if($role !== 'sales_person'): ?>
                                                     <span style="font-size:0.75rem; color:var(--text-muted); margin-left:10px;">👤 Ref: <?= htmlspecialchars($v['staff_name']) ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($v['product_name']): ?>
+                                                    <div style="font-size:0.85rem; color:#6366f1; font-weight:600; margin-top:4px;">📦 Product: <?= htmlspecialchars($v['product_name']) ?></div>
+                                                <?php endif; ?>
+                                                <?php if ($v['sold_price']): ?>
+                                                    <div style="font-size:0.9rem; color:#10b981; font-weight:700; margin-top:2px;">💰 Sold for: ₹<?= number_format($v['sold_price'], 2) ?></div>
+                                                <?php endif; ?>
                                             </div>
                                             <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;"><?= date('M d, Y', strtotime($v['visit_date'])) ?></span>
                                         </div>
@@ -249,13 +262,29 @@ foreach ($reports as $r) {
                 </div>
                 <div class="form-group" style="flex:1;">
                     <label>Deal Status *</label>
-                    <select name="deal_status" class="form-control" required>
+                    <select name="deal_status" id="dealStatusSelect" class="form-control" required onchange="toggleSoldPrice()">
                         <option value="Initial Meeting">Initial Meeting</option>
                         <option value="Follow-up">Follow-up</option>
                         <option value="Negotiating">Negotiating</option>
                         <option value="Closed Won">Closed Won</option>
                         <option value="Closed Lost">Closed Lost</option>
                     </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex:2;">
+                    <label>Related Product/Service</label>
+                    <select name="product_id" class="form-control">
+                        <option value="">-- No specific product --</option>
+                        <?php foreach($all_products as $p): ?>
+                            <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> (₹<?= number_format($p['price'], 0) ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1; display:none;" id="soldPriceGroup">
+                    <label>Sold Price (₹) *</label>
+                    <input type="number" step="0.01" name="sold_price" class="form-control" placeholder="0.00">
                 </div>
             </div>
             
@@ -391,6 +420,12 @@ function lockGPS() {
     } else {
         document.getElementById('locStatus').innerHTML = '❌ Unsupported Browser';
     }
+}
+
+function toggleSoldPrice() {
+    const status = document.getElementById('dealStatusSelect').value;
+    const group = document.getElementById('soldPriceGroup');
+    group.style.display = (status === 'Closed Won') ? 'block' : 'none';
 }
 
 function validateAndSubmit() {
