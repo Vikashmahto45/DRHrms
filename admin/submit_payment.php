@@ -30,7 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($amount > 0 && $client && $proof && $proof['error'] === 0) {
         $ext = pathinfo($proof['name'], PATHINFO_EXTENSION);
         $filename = "pay_" . time() . "_" . $cid . "." . $ext;
-        $target = "../assets/uploads/payments/" . $filename;
+        $uploadDir = "../assets/uploads/payments/";
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        $target = $uploadDir . $filename;
 
         if (move_uploaded_file($proof['tmp_name'], $target)) {
             try {
@@ -45,7 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msgType = "error";
             }
         } else {
-            $msg = "Failed to upload proof of payment.";
+            $error_detail = "Check directory permissions (0755/0777). Path: " . $uploadDir;
+            if (!is_writable($uploadDir)) $error_detail = "Directory $uploadDir is NOT writable.";
+            if (!file_exists($uploadDir)) $error_detail = "Directory $uploadDir does not exist.";
+            $msg = "Failed to upload proof. " . $error_detail;
             $msgType = "error";
         }
     } else {
