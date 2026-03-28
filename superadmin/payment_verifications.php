@@ -88,16 +88,15 @@ if ($role === 'super_admin') {
     ");
     $stmt->execute();
 } else {
-    // Main Admin: Only see payments from SUB-BRANCHES assigned to them
-    $stmt = $pdo->prepare("
+    // Main Admin: Act as Global Admin - see ALL pending sub-branch payments
+    $stmt = $pdo->query("
         SELECT p.*, c.name as company_name, pr.name as product_name 
         FROM franchise_payments p 
         JOIN companies c ON p.company_id = c.id 
         LEFT JOIN products pr ON p.product_id = pr.id
-        WHERE p.status = 'pending' AND c.parent_id = ?
+        WHERE p.status = 'pending' AND c.is_main_branch = 0
         ORDER BY p.created_at DESC
     ");
-    $stmt->execute([$cid]);
 }
 $pendings = $stmt->fetchAll();
 ?>
