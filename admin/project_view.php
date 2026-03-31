@@ -8,6 +8,11 @@ $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
 $pid = (int)($_GET['id'] ?? 0);
 
+// Fetch Branch Info
+$branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$branch_info->execute([$cid]);
+$is_hq = (bool)$branch_info->fetchColumn();
+
 // Fetch Project
 $stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id = ?");
 $stmt->execute([$pid, $cid]);
@@ -18,25 +23,48 @@ if (!$p) { die("Project not found."); }
 // Determine Salesperson name (System or Custom)
 $display_salesperson = $p['system_salesperson_name'] ?: ($p['custom_sales_name'] ?: 'N/A');
 
-// Handle Progress Update
+// Handle Progress Update (Only Assigned Staff or Admin)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_progress') {
-    $new_progress = (int)$_POST['progress_pct'];
-    $comment = trim($_POST['comment'] ?? '');
-    $old_progress = $p['progress_pct'];
+    if ($uid == $p['sales_person_id'] || $is_hq) {
+        $new_progress = (int)$_POST['progress_pct'];
+        $comment = trim($_POST['comment'] ?? '');
+        $old_progress = $p['progress_pct'];
 
-    if ($new_progress >= 0 && $new_progress <= 100) {
-        $pdo->beginTransaction();
-        // Update Project
-        $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")
-            ->execute([$new_progress, ($new_progress == 100 ? 'Completed' : 'Active'), $pid]);
-        
-        // Log Update
-        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, old_progress, new_progress, comment) VALUES (?,?,?,?,?)")
-            ->execute([$pid, $uid, $old_progress, $new_progress, $comment]);
-            
-        $pdo->commit();
-        header("Location: project_view.php?id=$pid&msg=Progress Updated"); exit();
+        if ($new_progress >= 0 && $new_progress <= 100) {
+            $pdo->beginTransaction();
+            $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")->execute([$new_progress, ($new_progress == 100 ? 'Completed' : 'Active'), $pid]);
+            $pdo->prepare("INSERT INTO project_logs (project_id, user_id, old_progress, new_progress, comment) VALUES (?,?,?,?,?)")->execute([$pid, $uid, $old_progress, $new_progress, $comment]);
+            $pdo->commit();
+            header("Location: project_view.php?id=$pid&msg=Progress Updated"); exit();
+        }
     }
+}
+
+// Handle Verification (HQ Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq) {
+    try {
+        $adv = (float)$_POST['advance_paid'];
+        $sp_id = (int)$_POST['sales_person_id'];
+        $custom_sp = trim($_POST['custom_sales_name'] ?? '');
+        
+        $pdo->beginTransaction();
+        $pdo->prepare("UPDATE projects SET status = 'Active', is_verified = 1, verified_by = ?, advance_paid = ?, sales_person_id = ?, custom_sales_name = ? WHERE id = ?")
+            ->execute([$uid, $adv, ($sp_id ?: null), $custom_sp, $pid]);
+        
+        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+            ->execute([$pid, $uid, "Project verified by HQ. Advance confirmed: ₹$adv. Assigned to salesperson."]);
+        
+        $pdo->commit();
+        header("Location: project_view.php?id=$pid&msg=Project Verified and Assigned"); exit();
+    } catch (Exception $e) { $msg = $e->getMessage(); }
+}
+
+// Fetch Staff for assignment dropdown (HQ view)
+$staff_members = [];
+if ($is_hq) {
+    $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
+    $sp_stmt->execute([$cid]);
+    $staff_members = $sp_stmt->fetchAll();
 }
 
 // Fetch Logs
@@ -71,8 +99,12 @@ $logs = $log_stmt->fetchAll();
                 <a href="projects.php" style="text-decoration:none; color:var(--text-muted); font-size:0.9rem;">← Back to Projects</a>
                 <h1 style="margin-top:10px;"><?= htmlspecialchars($p['project_name']) ?></h1>
             </div>
-            <div class="badge <?= $p['status'] === 'Active' ? 'st-Active' : 'st-Pending' ?>"><?= $p['status'] ?></div>
+            <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
         </div>
+
+        <?php if (isset($_GET['msg'])): ?>
+            <div class="flash-success" style="margin-bottom:2rem;"><?= htmlspecialchars($_GET['msg']) ?></div>
+        <?php endif; ?>
 
         <div style="display:grid; grid-template-columns: 1fr 300px; gap: 2rem;">
             <!-- Left: Logs & Details -->
@@ -118,15 +150,41 @@ $logs = $log_stmt->fetchAll();
                 </div>
             </div>
 
-            <!-- Right: Update Form -->
+            <!-- Right: Action Form -->
             <div>
-                <div class="content-card progress-indicator">
-                    <div class="progress-circle" style="transform: rotate(<?= ($p['progress_pct'] * 3.6 - 45) ?>deg);">
-                        <span style="transform: rotate(<?= -($p['progress_pct'] * 3.6 - 45) ?>deg);"><?= $p['progress_pct'] ?>%</span>
+                <?php if ($p['status'] === 'Pending HQ Review' && $is_hq): ?>
+                <div class="content-card" style="border: 2px solid #ef4444;">
+                    <h3 style="color:#ef4444;">HQ Verification Required</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Verify advance payment and assign a Main Branch staff member.</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="verify_project">
+                        <div class="form-group">
+                            <label>Confirm Advance Paid (₹)</label>
+                            <input type="number" name="advance_paid" class="form-control" value="<?= $p['advance_paid'] ?>" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Assign to Main Branch Staff</label>
+                            <select name="sales_person_id" class="form-control" required>
+                                <option value="">-- Select Staff --</option>
+                                <?php foreach($staff_members as $sm): ?>
+                                    <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?> (<?= $sm['role'] ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="margin-top:10px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; background:#ef4444; border:none;">Verify & Start Execution</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
+                <div class="content-card progress-indicator" style="margin-top:<?= ($p['status'] === 'Pending HQ Review' && $is_hq) ? '1.5rem' : '0' ?>;">
+                    <div class="progress-circle" style="border-top-color: <?= ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') ?>;">
+                        <span><?= $p['progress_pct'] ?>%</span>
                     </div>
                     <p style="font-weight:600; color:#1e293b;">Overall Progress</p>
                 </div>
 
+                <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq)): ?>
                 <div class="content-card" style="margin-top:1.5rem;">
                     <h3>Update Progress</h3>
                     <form method="POST" style="margin-top:1rem;">
@@ -138,11 +196,17 @@ $logs = $log_stmt->fetchAll();
                         </div>
                         <div class="form-group">
                             <label>Update Comment</label>
-                            <textarea name="comment" class="form-control" rows="3" placeholder="What task was completed?"></textarea>
+                            <textarea name="comment" class="form-control" rows="3" placeholder="What task was completed?" required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width:100%;">Post Update</button>
                     </form>
                 </div>
+                <?php elseif ($p['status'] === 'Pending HQ Review'): ?>
+                    <div class="content-card" style="margin-top:1.5rem; text-align:center; padding:2rem; background:#fef2f2; border:1px dashed #ef4444;">
+                        <p style="color:#b91c1c; font-weight:600; font-size:0.9rem;">Awaiting HQ Verification</p>
+                        <p style="font-size:0.8rem; color:#7f1d1d;">Once the Main Branch verifies the advance payment, work will begin.</p>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
 

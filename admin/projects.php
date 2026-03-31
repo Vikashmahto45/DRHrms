@@ -8,8 +8,14 @@ $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
 $role = $_SESSION['user_role'] ?? '';
 
+// Fetch Branch Info
+$branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$branch_info->execute([$cid]);
+$is_hq = (bool)$branch_info->fetchColumn();
+
 // 0. Auto-patch for Projects Table
 try {
+    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending Approval'");
     $pdo->exec("CREATE TABLE IF NOT EXISTS projects (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT NOT NULL,
@@ -21,7 +27,7 @@ try {
         project_description TEXT NULL,
         total_value DECIMAL(15,2) DEFAULT 0.00,
         advance_paid DECIMAL(15,2) DEFAULT 0.00,
-        status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending Approval',
+        status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review',
         progress_pct INT DEFAULT 0,
         is_verified TINYINT(1) DEFAULT 0,
         verified_by INT NULL,
@@ -55,10 +61,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
             $custom_sp = trim($_POST['custom_sales_name'] ?? '');
 
+            // Rule: Sub-branch entries are 'Pending HQ Review'
+            $status = $is_hq ? 'Active' : 'Pending HQ Review';
+            $verified = $is_hq ? 1 : 0;
+
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, sales_person_id, client_name, project_name, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', 1, ?)");
-                $stmt->execute([$cid, $sp_id, $client, $pname, $desc, $val, $adv, $custom_sp]);
-                $msg = "Project created and verified successfully!"; $msgType = "success";
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $desc, $val, $adv, $status, $verified, $custom_sp]);
+                $msg = $is_hq ? "Project created and verified." : "Project submitted. Awaiting HQ Verification."; 
+                $msgType = "success";
             }
         } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
     }
@@ -112,6 +123,7 @@ $staff_members = $sp_stmt->fetchAll();
         .progress-bar-container { background: #e2e8f0; border-radius: 20px; height: 10px; overflow: hidden; margin-top: 5px; }
         .progress-bar-fill { background: var(--primary-color); height: 100%; transition: width 0.3s; }
         .st-Pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .st-Pending-HQ-Review { background: rgba(239,68,68,0.1); color: #ef4444; }
         .st-Active { background: rgba(16,185,129,0.1); color: #10b981; }
         .st-Hold { background: rgba(107,114,128,0.1); color: #6b7280; }
         .project-card { border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; background: #fff; margin-bottom: 1.5rem; transition: transform 0.2s; }
@@ -141,8 +153,18 @@ $staff_members = $sp_stmt->fetchAll();
         <?php endif; ?>
 
         <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
-            <?php foreach ($projects as $p): 
-                $status_class = $p['status'] === 'Pending Approval' ? 'st-Pending' : ($p['status'] === 'Active' ? 'st-Active' : 'st-Hold');
+            <?php 
+            // Grouping: Show Pending HQ Review first if HQ
+            if ($is_hq) {
+                usort($projects, function($a, $b) {
+                    if ($a['status'] === 'Pending HQ Review' && $b['status'] !== 'Pending HQ Review') return -1;
+                    if ($a['status'] !== 'Pending HQ Review' && $b['status'] === 'Pending HQ Review') return 1;
+                    return 0;
+                });
+            }
+
+            foreach ($projects as $p): 
+                $status_class = "st-" . str_replace(' ', '-', $p['status']);
             ?>
             <div class="project-card">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 1rem;">
@@ -168,10 +190,11 @@ $staff_members = $sp_stmt->fetchAll();
                         👤 <?= htmlspecialchars($p['salesperson_name']) ?>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <?php if (!$p['is_verified'] && ($role === 'admin' || $role === 'manager')): ?>
-                            <a href="?verify=<?= $p['id'] ?>" class="btn btn-sm btn-outline" style="color:#10b981; border-color:#10b981;">Verify Project</a>
+                        <?php if ($p['status'] === 'Pending HQ Review' && $is_hq): ?>
+                            <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary" style="background:#ef4444; border:none;">Verify & Assign HQ Staff</a>
+                        <?php else: ?>
+                            <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary">View Details</a>
                         <?php endif; ?>
-                        <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary">View Details</a>
                     </div>
                 </div>
             </div>
@@ -211,17 +234,23 @@ $staff_members = $sp_stmt->fetchAll();
                     <input type="number" name="advance_paid" class="form-control" placeholder="0.00">
                 </div>
             </div>
-            <div class="form-group">
-                <label>Assign to Staff Member (Optional)</label>
+            <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
+                <label>Assign to HQ Staff (Main Branch Only)</label>
                 <div style="display:flex; gap:10px;">
                     <select name="sales_person_id" class="form-control" style="flex:1;">
                         <option value="">-- No User Selected --</option>
-                        <?php foreach($staff_members as $sm): ?>
+                        <?php 
+                        // If HQ, show all staff. If Sub, they can't assign (hidden)
+                        foreach($staff_members as $sm): 
+                        ?>
                             <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?> (<?= ucfirst($sm['role']) ?>)</option>
                         <?php endforeach; ?>
                     </select>
                     <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="flex:1;">
                 </div>
+                <?php if (!$is_hq): ?>
+                    <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and staff assignment is handled by the Main Branch.</p>
+                <?php endif; ?>
             </div>
             <div class="form-group">
                 <label>Project Brief</label>
