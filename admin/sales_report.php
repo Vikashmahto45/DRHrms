@@ -4,42 +4,76 @@ require_once '../includes/auth.php';
 require_once '../config/database.php';
 checkAccess(['admin', 'manager']);
 
+$uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
 
-// Auto-patch check for live server
-try {
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER user_id");
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status");
-} catch (Exception $e) {
-    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN product_id INT NULL DEFAULT NULL AFTER user_id"); } catch(Exception $ex){}
-    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status"); } catch(Exception $ex){}
-}
+// Get Date Filters (Default to this month)
+$start_date = $_GET['start_date'] ?? date('Y-m-01');
+$end_date = $_GET['end_date'] ?? date('Y-m-d');
+
+// Fetch Accessible Branch IDs for HQ visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-// 1. Fetch Sales Data (Closed Won deals)
-$stmt = $pdo->prepare("
-    SELECT 
-        d.*, 
-        u.name as staff_name, 
-        p.name as product_name, 
-        c.name as branch_name,
-        c.id as branch_id
-    FROM dsr d
-    JOIN users u ON d.user_id = u.id
-    LEFT JOIN products p ON d.product_id = p.id
-    LEFT JOIN companies c ON d.company_id = c.id
-    WHERE d.company_id IN ($cids_in) 
-    AND d.deal_status = 'Closed Won'
-    ORDER BY d.visit_date DESC, d.created_at DESC
-");
-$stmt->execute();
+/** 
+ * 1. UNIFIED REVENUE QUERY 
+ * Aggregates:
+ * - A: DSR Items (On-field deals won)
+ * - B: Verified Projects (Office/Large contracts)
+ */
+$query = "
+    (
+        SELECT 
+            d.visit_date as sale_date,
+            d.client_name,
+            p.name as item_name,
+            di.custom_price as amount,
+            u.name as staff_name,
+            c.name as branch_name,
+            c.id as branch_id,
+            'DSR Deal' as sale_type
+        FROM dsr d
+        JOIN dsr_items di ON d.id = di.dsr_id
+        JOIN products p ON di.product_id = p.id
+        JOIN users u ON d.user_id = u.id
+        JOIN companies c ON d.company_id = c.id
+        WHERE d.company_id IN ($cids_in) 
+        AND d.deal_status = 'Closed Won'
+        AND d.visit_date BETWEEN ? AND ?
+    )
+    UNION ALL
+    (
+        SELECT 
+            DATE(p.created_at) as sale_date,
+            p.client_name,
+            p.project_name as item_name,
+            p.total_value as amount,
+            COALESCE(u.name, p.custom_sales_name, 'HQ Assigned') as staff_name,
+            c.name as branch_name,
+            c.id as branch_id,
+            'Project' as sale_type
+        FROM projects p
+        JOIN companies c ON p.branch_id = c.id
+        LEFT JOIN users u ON p.sales_person_id = u.id
+        WHERE p.branch_id IN ($cids_in)
+        AND p.is_verified = 1
+        AND DATE(p.created_at) BETWEEN ? AND ?
+    )
+    ORDER BY sale_date DESC
+";
+
+$stmt = $pdo->prepare($query);
+$stmt->execute([$start_date, $end_date, $start_date, $end_date]);
 $sales = $stmt->fetchAll();
 
-// 2. Stats
+// 2. Summary Stats
 $total_revenue = 0;
+$dsr_revenue = 0;
+$proj_revenue = 0;
 foreach ($sales as $s) {
-    $total_revenue += (float)($s['sold_price'] ?? 0);
+    if ($s['sale_type'] === 'DSR Deal') $dsr_revenue += $s['amount'];
+    else $proj_revenue += $s['amount'];
+    $total_revenue += (float)$s['amount'];
 }
 ?>
 <!DOCTYPE html>
@@ -47,15 +81,20 @@ foreach ($sales as $s) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Closed Deals & Sales Report - DRHrms</title>
+    <title>Unified Sales Report (Branch History) - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
     <style>
         .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); }
-        .stat-val { font-size: 1.8rem; font-weight: 800; color: #10b981; margin-top: 5px; }
-        .product-badge { background: #eef2ff; color: #6366f1; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .stat-val { font-size: 1.6rem; font-weight: 800; color: #10b981; margin-top: 5px; }
+        .type-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
+        .type-DSR { background: #eef2ff; color: #6366f1; border: 1px solid #c7d2fe; }
+        .type-Project { background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; }
+        
+        .filter-bar { background: #fff; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-end; border: 1px solid var(--glass-border); }
+        @media (max-width: 768px) { .filter-bar { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -66,66 +105,84 @@ foreach ($sales as $s) {
         
         <div class="page-header">
             <div>
-                <h1>Closed Deals & Sales Report</h1>
-                <p style="color:var(--text-muted)">Comprehensive list of products sold and revenue generated by your team.</p>
+                <h1>Unified Sales & Revenue Report</h1>
+                <p style="color:var(--text-muted)">Consolidated income from DSR Deals and Verified Office Projects.</p>
             </div>
-            <button onclick="window.print()" class="btn btn-outline">Print Report</button>
+            <button onclick="window.print()" class="btn btn-outline">🖨️ Print Report</button>
         </div>
+
+        <!-- Date Filters -->
+        <form class="filter-bar no-print">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>Start Date</label>
+                <input type="date" name="start_date" class="form-control" value="<?= $start_date ?>">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>End Date</label>
+                <input type="date" name="end_date" class="form-control" value="<?= $end_date ?>">
+            </div>
+            <button type="submit" class="btn btn-primary" style="height:42px;">Filter Results</button>
+            <a href="sales_report.php" class="btn btn-outline" style="height:42px; display:flex; align-items:center;">Reset</a>
+        </form>
 
         <div class="sales-stats">
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600; text-transform:uppercase;">Total Revenue</span>
+                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">CONSIDERED REVENUE</span>
                 <div class="stat-val">₹<?= number_format($total_revenue, 2) ?></div>
             </div>
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600; text-transform:uppercase;">Closed Deals</span>
-                <div class="stat-val" style="color:var(--primary-color)"><?= count($sales) ?></div>
+                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">PROJECT SALES</span>
+                <div class="stat-val" style="color:#db2777;">₹<?= number_format($proj_revenue, 2) ?></div>
+            </div>
+            <div class="stat-card">
+                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">FIELD DEALS (DSR)</span>
+                <div class="stat-val" style="color:#6366f1;">₹<?= number_format($dsr_revenue, 2) ?></div>
+            </div>
+            <div class="stat-card">
+                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">TOTAL TRANSACTIONS</span>
+                <div class="stat-val" style="color:var(--text-main);"><?= count($sales) ?></div>
             </div>
         </div>
 
         <div class="content-card">
             <div class="card-header">
-                <h3>Transaction Record</h3>
+                <h3>Sales Ledger Overview (<?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?>)</h3>
             </div>
             <div style="overflow-x:auto;">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>Date</th>
+                            <th>Entry Type</th>
                             <th>Client Name</th>
-                            <th>Product Sold</th>
-                            <th>Sold Price</th>
-                            <th>Sales Person</th>
+                            <th>Item / Project</th>
+                            <th>Amount</th>
+                            <th>Staff Member</th>
                             <th>Branch</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($sales as $s): ?>
                         <tr>
-                            <td><?= date('d M, Y', strtotime($s['visit_date'])) ?></td>
+                            <td><?= date('d M, Y', strtotime($s['sale_date'])) ?></td>
+                            <td><span class="type-badge type-<?= $s['sale_type'] === 'DSR Deal' ? 'DSR' : 'Project' ?>"><?= $s['sale_type'] ?></span></td>
                             <td><strong><?= htmlspecialchars($s['client_name']) ?></strong></td>
-                            <td>
-                                <?php if ($s['product_name']): ?>
-                                    <span class="product-badge"><?= htmlspecialchars($s['product_name']) ?></span>
-                                <?php else: ?>
-                                    <span style="color:var(--text-muted); font-style:italic;">Untracked Product</span>
-                                <?php endif; ?>
-                            </td>
-                            <td style="font-weight:700; color:#10b981;">₹<?= number_format($s['sold_price'], 2) ?></td>
-                            <td><?= htmlspecialchars($s['staff_name']) ?></td>
+                            <td style="font-size:0.9rem;"><?= htmlspecialchars($s['item_name']) ?></td>
+                            <td style="font-weight:700; color:#10b981;">₹<?= number_format((float)$s['amount'], 2) ?></td>
+                            <td style="font-size:0.9rem;"><?= htmlspecialchars($s['staff_name']) ?></td>
                             <td>
                                 <?php if ($s['branch_id'] == $cid): ?>
-                                    <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">🏠 Main Office (HQ)</span>
+                                    <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">🏠 Main Branch</span>
                                 <?php else: ?>
-                                    <span style="font-size:0.85rem; background:#eef2ff; color:#4f46e5; padding:3px 8px; border-radius:6px; font-weight:600;">🏢 <?= htmlspecialchars($s['branch_name']) ?></span>
+                                    <span style="font-size:0.85rem; background:#eff6ff; color:#1e40af; padding:3px 8px; border-radius:6px; font-weight:600;">🏢 <?= htmlspecialchars($s['branch_name']) ?></span>
                                 <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                         <?php if (empty($sales)): ?>
                         <tr>
-                            <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
-                                No closed deals found. When a DSR is submitted with "Closed Won" status, it will appear here.
+                            <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                                No sales found for the selected date range. Ensure deals are marked as "Closed Won" or Projects are "Verified" by HQ.
                             </td>
                         </tr>
                         <?php endif; ?>
