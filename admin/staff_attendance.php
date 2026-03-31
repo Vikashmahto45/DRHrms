@@ -20,9 +20,23 @@ $stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id=? AND date=CURDATE
 $stmt->execute([$uid]);
 $today_record = $stmt->fetch();
 
-// Fetch attendance history (last 30 records)
-$history_stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id=? ORDER BY date DESC LIMIT 30");
-$history_stmt->execute([$uid]);
+// Filtering Logic
+$where_clauses = ["user_id=?"];
+$params = [$uid];
+
+if (!empty($_GET['month'])) {
+    $where_clauses[] = "MONTH(date) = ? AND YEAR(date) = YEAR(CURDATE())";
+    $params[] = $_GET['month'];
+}
+if (!empty($_GET['start_date']) && !empty($_GET['end_date'])) {
+    $where_clauses[] = "date BETWEEN ? AND ?";
+    $params[] = $_GET['start_date'];
+    $params[] = $_GET['end_date'];
+}
+
+$where_sql = implode(" AND ", $where_clauses);
+$history_stmt = $pdo->prepare("SELECT * FROM attendance WHERE $where_sql ORDER BY date DESC LIMIT 100");
+$history_stmt->execute($params);
 $history = $history_stmt->fetchAll();
 
 // Helper to calculate duration
@@ -103,9 +117,23 @@ function getDuration($in, $out) {
         </div>
 
         <div class="content-card">
-            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <h2>Attendance History</h2>
-                <div style="font-size:0.85rem; color:var(--text-muted);">Last 30 Records</div>
+                <form method="GET" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <select name="month" class="form-control" style="width:auto; padding:5px 15px;" onchange="this.form.submit()">
+                        <option value="">-- All Months --</option>
+                        <?php for($i=1; $i<=12; $i++): ?>
+                            <option value="<?= $i ?>" <?= (isset($_GET['month']) && $_GET['month'] == $i) ? 'selected' : '' ?>><?= date('F', mktime(0,0,0,$i,1)) ?></option>
+                        <?php endfor; ?>
+                    </select>
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <input type="date" name="start_date" class="form-control" style="width:auto; padding:5px;" value="<?= $_GET['start_date'] ?? '' ?>">
+                        <span style="color:var(--text-muted)">to</span>
+                        <input type="date" name="end_date" class="form-control" style="width:auto; padding:5px;" value="<?= $_GET['end_date'] ?? '' ?>">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                    <a href="staff_attendance.php" class="btn btn-outline btn-sm">Reset</a>
+                </form>
             </div>
             <div class="table-responsive">
                 <table class="table">
