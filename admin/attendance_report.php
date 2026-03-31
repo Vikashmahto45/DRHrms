@@ -56,25 +56,6 @@ foreach ($records as $r) {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            display: inline-block;
-        }
-        .status-present { background: #10b981; }
-        .status-half { background: #f59e0b; }
-        .status-absent { background: #ef4444; }
-    </style>
-</head>
-                    <?php for($y=date('Y'); $y>=date('Y')-2; $y--): ?>
-                        <option value="<?= $y ?>" <?= $year == $y ? 'selected' : '' ?>><?= $y ?></option>
-                    <?php endfor; ?>
-                </select>
-            </form>
-        </div>
-
-        <div class="content-card" style="padding: 1rem;">
-            <div style="overflow-x: auto;">
-                <table class="calendar-table">
-                    <thead>
-                        <tr>
                             <th style="min-width: 150px; text-align: left; padding-left: 1rem;">Staff Name</th>
                             <?php for($d=1; $d<=$days_in_month; $d++): ?>
                                 <th><?= $d ?></th>
