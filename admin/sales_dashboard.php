@@ -129,8 +129,7 @@ $announcements = $ann_stmt->fetchAll();
             </div>
             <div class="glass-card stat-card" style="border-top: 4px solid #10b981;">
                 <p>Total Sales (₹)</p>
-                <h3>₹<?= number_format($total_revenue / 1000, 1) ?>k</h3>
-                <small style="color:#10b981; font-weight:700;">₹<?= number_format($total_revenue, 0) ?></small>
+                <h3>₹<?= number_format($total_revenue, 0) ?></h3>
             </div>
             <div class="glass-card stat-card" style="border-top: 4px solid #f59e0b;">
                 <p>Deals Won</p>
