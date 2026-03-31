@@ -25,6 +25,7 @@ try {
         progress_pct INT DEFAULT 0,
         is_verified TINYINT(1) DEFAULT 0,
         verified_by INT NULL,
+        custom_sales_name VARCHAR(255) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
@@ -51,11 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $val = (float)($_POST['total_value'] ?? 0);
             $adv = (float)($_POST['advance_paid'] ?? 0);
             $desc = trim($_POST['description'] ?? '');
-            $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : $uid;
+            $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
+            $custom_sp = trim($_POST['custom_sales_name'] ?? '');
 
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, sales_person_id, client_name, project_name, project_description, total_value, advance_paid, status, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', 1)");
-                $stmt->execute([$cid, $sp_id, $client, $pname, $desc, $val, $adv]);
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, sales_person_id, client_name, project_name, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', 1, ?)");
+                $stmt->execute([$cid, $sp_id, $client, $pname, $desc, $val, $adv, $custom_sp]);
                 $msg = "Project created and verified successfully!"; $msgType = "success";
             }
         } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
@@ -74,14 +76,19 @@ if (isset($_GET['verify']) && ($role === 'admin' || $role === 'manager')) {
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-if ($role === 'sales_person') {
-    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? ORDER BY p.created_at DESC");
-    $stmt->execute([$uid]);
-} else {
     $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p JOIN users u ON p.sales_person_id = u.id WHERE p.company_id IN ($cids_in) ORDER BY p.created_at DESC");
     $stmt->execute();
 }
-$projects = $stmt->fetchAll();
+$results = $stmt->fetchAll();
+
+// Refine the project list to handle null user names (custom names)
+$projects = [];
+foreach($results as $res) {
+    if(empty($res['salesperson_name']) && !empty($res['custom_sales_name'])) {
+        $res['salesperson_name'] = $res['custom_sales_name'];
+    }
+    $projects[] = $res;
+}
 
 // Fetch Sales Persons for direct entry
 $sp_stmt = $pdo->prepare("SELECT id, name FROM users WHERE company_id = ? AND role = 'sales_person'");
@@ -202,12 +209,15 @@ $sales_persons = $sp_stmt->fetchAll();
             </div>
             <div class="form-group">
                 <label>Assign to Sales Person (Optional)</label>
-                <select name="sales_person_id" class="form-control">
-                    <option value="">-- Assign to self (Admin) --</option>
-                    <?php foreach($sales_persons as $sp): ?>
-                        <option value="<?= $sp['id'] ?>"><?= htmlspecialchars($sp['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <div style="display:flex; gap:10px;">
+                    <select name="sales_person_id" class="form-control" style="flex:1;">
+                        <option value="">-- No User Selected --</option>
+                        <?php foreach($sales_persons as $sp): ?>
+                            <option value="<?= $sp['id'] ?>"><?= htmlspecialchars($sp['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="flex:1;">
+                </div>
             </div>
             <div class="form-group">
                 <label>Project Brief</label>

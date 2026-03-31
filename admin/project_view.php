@@ -9,11 +9,14 @@ $cid = $_SESSION['company_id'];
 $pid = (int)($_GET['id'] ?? 0);
 
 // Fetch Project
-$stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id = ?");
+$stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id = ?");
 $stmt->execute([$pid, $cid]);
 $p = $stmt->fetch();
 
 if (!$p) { die("Project not found."); }
+
+// Determine Salesperson name (System or Custom)
+$display_salesperson = $p['system_salesperson_name'] ?: ($p['custom_sales_name'] ?: 'N/A');
 
 // Handle Progress Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_progress') {
@@ -83,7 +86,7 @@ $logs = $log_stmt->fetchAll();
                         </div>
                         <div>
                             <label style="font-size:0.8rem; color:var(--text-muted);">SALES PERSON</label>
-                            <div style="font-weight:600;"><?= htmlspecialchars($p['salesperson_name']) ?></div>
+                            <div style="font-weight:600;"><?= htmlspecialchars($display_salesperson) ?></div>
                         </div>
                         <div>
                             <label style="font-size:0.8rem; color:var(--text-muted);">TOTAL VALUE</label>
