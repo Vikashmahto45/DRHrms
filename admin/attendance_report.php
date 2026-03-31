@@ -63,24 +63,6 @@ foreach ($records as $r) {
         .status-absent { background: #ef4444; }
     </style>
 </head>
-<body>
-<?php include 'includes/sidebar.php'; ?>
-<div class="main-wrapper" style="flex: 1; margin-left: 260px;">
-    <?php include 'includes/topbar.php'; ?>
-    <main class="main-content" style="margin-left: 0; width: 100%; padding: 2rem 3rem;">
-        
-        <div class="page-header">
-            <div>
-                <h1>Monthly Attendance Report</h1>
-                <p style="color:var(--text-muted)">Overview of staff presence for <?= date('F Y', strtotime("$year-$month-01")) ?></p>
-            </div>
-            <form method="GET" style="display:flex; gap: 0.5rem;">
-                <select name="month" class="form-control" onchange="this.form.submit()">
-                    <?php for($m=1; $m<=12; $m++): ?>
-                        <option value="<?= sprintf('%02d', $m) ?>" <?= $month == $m ? 'selected' : '' ?>><?= date('F', mktime(0,0,0,$m,1)) ?></option>
-                    <?php endfor; ?>
-                </select>
-                <select name="year" class="form-control" onchange="this.form.submit()">
                     <?php for($y=date('Y'); $y>=date('Y')-2; $y--): ?>
                         <option value="<?= $y ?>" <?= $year == $y ? 'selected' : '' ?>><?= $y ?></option>
                     <?php endfor; ?>

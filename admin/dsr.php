@@ -146,9 +146,12 @@ foreach ($reports as $r) {
                 <h1>Advanced CRM DSR Tracker</h1>
                 <p style="color:var(--text-muted)">Track progressive client timelines and secure Live-Camera field visits.</p>
             </div>
-            <?php if ($role === 'sales_person'): ?>
-                <button class="btn btn-primary" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
-            <?php endif; ?>
+            <div style="display:flex;gap:10px;">
+                <button onclick="window.print()" class="btn btn-outline">Print DSR Timeline</button>
+                <?php if ($role === 'sales_person'): ?>
+                    <button class="btn btn-primary" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
+                <?php endif; ?>
+            </div>
         </div>
 
         <?php if ($msg): ?>
