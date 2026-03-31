@@ -9,11 +9,16 @@ $user_id = (int)($_GET['id'] ?? 0);
 
 if (!$user_id) { header("Location: staff.php"); exit(); }
 
-// 0. Auto-patch for Profile Image
+// 0. Auto-patch for Profile Image & Phone
 try {
     $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image VARCHAR(255) NULL AFTER password");
 } catch (Exception $e) {
     try { $pdo->exec("ALTER TABLE users ADD COLUMN profile_image VARCHAR(255) NULL AFTER password"); } catch(Exception $ex){}
+}
+try {
+    $pdo->exec("ALTER TABLE employee_details ADD COLUMN IF NOT EXISTS phone VARCHAR(20) NULL AFTER company_id");
+} catch (Exception $e) {
+    try { $pdo->exec("ALTER TABLE employee_details ADD COLUMN phone VARCHAR(20) NULL AFTER company_id"); } catch(Exception $ex){}
 }
 
 // ── Handle Profile Updates ──────────────────────────────────────────
