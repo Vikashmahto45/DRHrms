@@ -380,7 +380,7 @@ foreach ($reports as $r) {
             <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
                 <label style="font-weight:600; color:#475569; display:block; margin-bottom:10px;">Select Products & Services</label>
                 <div id="productRows">
-                    <div class="form-row" style="margin-bottom:10px;">
+                    <div class="form-row product-item-row" style="margin-bottom:10px;">
                         <div class="form-group" style="flex:2; margin-bottom:0;">
                             <select name="product_ids[]" class="form-control" onchange="updateDefaultPrice(this)">
                                 <option value="">-- Select Product --</option>
@@ -390,12 +390,15 @@ foreach ($reports as $r) {
                             </select>
                         </div>
                         <div class="form-group" style="flex:1; margin-bottom:0;">
-                            <input type="number" step="0.01" name="custom_prices[]" class="form-control" placeholder="Price ₹">
+                            <input type="number" step="0.01" name="custom_prices[]" class="form-control price-input" placeholder="Price ₹" oninput="calculateTotal()">
                         </div>
-                        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove()">✕</button>
+                        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove(); calculateTotal()">✕</button>
                     </div>
                 </div>
-                <button type="button" class="btn btn-outline btn-sm" onclick="addProductRow()" style="margin-top:5px;">+ Add Another Item</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #cbd5e1; padding-top:10px;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addProductRow()">+ Add Another Item</button>
+                    <div style="font-weight:700; color:var(--primary-color);">Total: ₹<span id="liveTotal">0.00</span></div>
+                </div>
             </div>
             
             <div class="form-group" id="cameraGroup">
@@ -445,7 +448,7 @@ let streamGlobal = null;
 function addProductRow() {
     const container = document.getElementById('productRows');
     const row = document.createElement('div');
-    row.className = 'form-row';
+    row.className = 'form-row product-item-row';
     row.style.marginBottom = '10px';
     row.innerHTML = `
         <div class="form-group" style="flex:2; margin-bottom:0;">
@@ -457,9 +460,9 @@ function addProductRow() {
             </select>
         </div>
         <div class="form-group" style="flex:1; margin-bottom:0;">
-            <input type="number" step="0.01" name="custom_prices[]" class="form-control" placeholder="Price ₹">
+            <input type="number" step="0.01" name="custom_prices[]" class="form-control price-input" placeholder="Price ₹" oninput="calculateTotal()">
         </div>
-        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove()">✕</button>
+        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove(); calculateTotal()">✕</button>
     `;
     container.appendChild(row);
 }
@@ -468,6 +471,16 @@ function updateDefaultPrice(select) {
     const price = select.options[select.selectedIndex].dataset.price;
     const input = select.parentElement.nextElementSibling.querySelector('input');
     if(price) input.value = price;
+    calculateTotal();
+}
+
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.price-input').forEach(input => {
+        let val = parseFloat(input.value) || 0;
+        total += val;
+    });
+    document.getElementById('liveTotal').innerText = total.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 }
 
 function toggleRequirements() {
