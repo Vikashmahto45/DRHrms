@@ -32,7 +32,7 @@ try {
 } catch (Exception $e) { /* Patching error handled silent */ }
 
 /** 
- * 1. UNIFIED REVENUE QUERY 
+ * 1. UNIFIED REVENUE QUERY (with COLLATE to prevent 'Illegal mix of collations' error)
  * Aggregates:
  * - A: DSR Items (On-field deals won)
  * - B: Verified Projects (Office/Large contracts)
@@ -41,13 +41,13 @@ $query = "
     (
         SELECT 
             d.visit_date as sale_date,
-            d.client_name,
-            p.name as item_name,
+            d.client_name COLLATE utf8mb4_unicode_ci as client_name,
+            p.name COLLATE utf8mb4_unicode_ci as item_name,
             di.custom_price as amount,
-            u.name as staff_name,
-            c.name as branch_name,
+            u.name COLLATE utf8mb4_unicode_ci as staff_name,
+            c.name COLLATE utf8mb4_unicode_ci as branch_name,
             c.id as branch_id,
-            'DSR Deal' as sale_type
+            'DSR Deal' COLLATE utf8mb4_unicode_ci as sale_type
         FROM dsr d
         JOIN dsr_items di ON d.id = di.dsr_id
         JOIN products p ON di.product_id = p.id
@@ -61,13 +61,13 @@ $query = "
     (
         SELECT 
             DATE(p.created_at) as sale_date,
-            p.client_name,
-            p.project_name as item_name,
+            p.client_name COLLATE utf8mb4_unicode_ci as client_name,
+            p.project_name COLLATE utf8mb4_unicode_ci as item_name,
             p.total_value as amount,
-            COALESCE(u.name, p.custom_sales_name, 'HQ Assigned') as staff_name,
-            c.name as branch_name,
+            COALESCE(u.name, p.custom_sales_name, 'HQ Assigned') COLLATE utf8mb4_unicode_ci as staff_name,
+            c.name COLLATE utf8mb4_unicode_ci as branch_name,
             c.id as branch_id,
-            'Project' as sale_type
+            'Project' COLLATE utf8mb4_unicode_ci as sale_type
         FROM projects p
         JOIN companies c ON p.branch_id = c.id
         LEFT JOIN users u ON p.sales_person_id = u.id
