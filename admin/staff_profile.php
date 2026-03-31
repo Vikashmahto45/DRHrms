@@ -21,6 +21,7 @@ $msg = ''; $msgType = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_profile') {
     $name = trim($_POST['name'] ?? '');
     $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
     $father = trim($_POST['father_name'] ?? '');
     $degree = trim($_POST['degree'] ?? '');
     $bank = trim($_POST['bank_name'] ?? '');
@@ -52,11 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $stmt = $pdo->prepare("SELECT id FROM employee_details WHERE user_id = ?");
         $stmt->execute([$user_id]);
         if ($stmt->fetch()) {
-            $stmt = $pdo->prepare("UPDATE employee_details SET father_name=?, degree=?, permanent_address=?, current_address=?, bank_name=?, account_number=?, ifsc_code=? WHERE user_id=?");
-            $stmt->execute([$father, $degree, $p_addr, $c_addr, $bank, $acc, $ifsc, $user_id]);
+            $stmt = $pdo->prepare("UPDATE employee_details SET phone=?, father_name=?, degree=?, permanent_address=?, current_address=?, bank_name=?, account_number=?, ifsc_code=? WHERE user_id=?");
+            $stmt->execute([$phone, $father, $degree, $p_addr, $c_addr, $bank, $acc, $ifsc, $user_id]);
         } else {
-            $stmt = $pdo->prepare("INSERT INTO employee_details (user_id, company_id, father_name, degree, permanent_address, current_address, bank_name, account_number, ifsc_code) VALUES (?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$user_id, $cid, $father, $degree, $p_addr, $c_addr, $bank, $acc, $ifsc]);
+            $stmt = $pdo->prepare("INSERT INTO employee_details (user_id, company_id, phone, father_name, degree, permanent_address, current_address, bank_name, account_number, ifsc_code) VALUES (?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$user_id, $cid, $phone, $father, $degree, $p_addr, $c_addr, $bank, $acc, $ifsc]);
         }
 
         $pdo->commit();
@@ -172,7 +173,7 @@ foreach($leaves as $l) {
                     <div style="font-weight:600;margin-bottom:0.8rem;"><?= htmlspecialchars($staff['email']) ?></div>
                     
                     <div style="font-size:0.85rem;color:var(--text-muted);">Phone</div>
-                    <div style="font-weight:600;">Not Provided</div>
+                    <div style="font-weight:600;"><?= htmlspecialchars($staff['phone'] ?: 'Not Provided') ?></div>
                 </div>
             </div>
         </div>
@@ -273,6 +274,10 @@ foreach($leaves as $l) {
                 <div class="form-group">
                     <label>Email Address *</label>
                     <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($staff['email']) ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" class="form-control" value="<?= htmlspecialchars($staff['phone'] ?? '') ?>">
                 </div>
                 <div class="form-group">
                     <label>Father's Name</label>

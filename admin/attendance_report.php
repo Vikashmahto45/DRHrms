@@ -12,7 +12,7 @@ $year = $_GET['year'] ?? date('Y');
 $days_in_month = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
 // Fetch all staff
-$staff = $pdo->prepare("SELECT id, name FROM users WHERE company_id=? AND role IN ('staff','manager') AND status='active'");
+$staff = $pdo->prepare("SELECT id, name FROM users WHERE company_id=? AND role IN ('staff','manager','sales_person') AND status='active'");
 $staff->execute([$cid]);
 $staff_list = $staff->fetchAll();
 
@@ -56,6 +56,54 @@ foreach ($records as $r) {
             width: 10px;
             height: 10px;
             border-radius: 50%;
+            display: inline-block;
+        }
+        .status-present { background: #10b981; }
+        .status-half { background: #f59e0b; }
+        .status-absent { background: #ef4444; }
+
+        @media print {
+            .sidebar, .top-bar, .page-header button, .form-control { display: none !important; }
+            .main-wrapper { margin-left: 0 !important; }
+            .main-content { padding: 0 !important; }
+            .content-card { border: none; box-shadow: none; }
+            body { background: #fff; color: #000; }
+        }
+    </style>
+</head>
+<body>
+<?php include 'includes/sidebar.php'; ?>
+<div class="main-wrapper" style="flex: 1; margin-left: 260px;">
+    <?php include 'includes/topbar.php'; ?>
+    <main class="main-content" style="margin-left: 0; width: 100%; padding: 2rem 3rem;">
+        
+        <div class="page-header">
+            <div>
+                <h1>Monthly Attendance Report</h1>
+                <p style="color:var(--text-muted)">Overview of staff presence for <?= date('F Y', strtotime("$year-$month-01")) ?></p>
+            </div>
+            <div style="display:flex; gap: 10px; align-items: center;">
+                <button onclick="window.print()" class="btn btn-outline">Print Attendance</button>
+                <form method="GET" style="display:flex; gap: 0.5rem;">
+                    <select name="month" class="form-control" onchange="this.form.submit()">
+                        <?php for($m=1; $m<=12; $m++): ?>
+                            <option value="<?= sprintf('%02d', $m) ?>" <?= $month == $m ? 'selected' : '' ?>><?= date('F', mktime(0,0,0,$m,1)) ?></option>
+                        <?php endfor; ?>
+                    </select>
+                    <select name="year" class="form-control" onchange="this.form.submit()">
+                        <?php for($y=date('Y'); $y>=date('Y')-2; $y--): ?>
+                            <option value="<?= $y ?>" <?= $year == $y ? 'selected' : '' ?>><?= $y ?></option>
+                        <?php endfor; ?>
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <div class="content-card" style="padding: 1rem;">
+            <div style="overflow-x: auto;">
+                <table class="calendar-table">
+                    <thead>
+                        <tr>
                             <th style="min-width: 150px; text-align: left; padding-left: 1rem;">Staff Name</th>
                             <?php for($d=1; $d<=$days_in_month; $d++): ?>
                                 <th><?= $d ?></th>
