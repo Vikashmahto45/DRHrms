@@ -76,7 +76,11 @@ if (isset($_GET['verify']) && ($role === 'admin' || $role === 'manager')) {
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p JOIN users u ON p.sales_person_id = u.id WHERE p.company_id IN ($cids_in) ORDER BY p.created_at DESC");
+if ($role === 'sales_person') {
+    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? ORDER BY p.created_at DESC");
+    $stmt->execute([$uid]);
+} else {
+    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.company_id IN ($cids_in) ORDER BY p.created_at DESC");
     $stmt->execute();
 }
 $results = $stmt->fetchAll();
