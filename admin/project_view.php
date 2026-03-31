@@ -13,9 +13,13 @@ $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?"
 $branch_info->execute([$cid]);
 $is_hq = (bool)$branch_info->fetchColumn();
 
+// Fetch Accessible Branches for hierarchy visibility
+$branch_ids = getAccessibleBranchIds($pdo, $cid);
+$cids_in = implode(',', $branch_ids);
+
 // Fetch Project
-$stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id = ?");
-$stmt->execute([$pid, $cid]);
+$stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id IN ($cids_in)");
+$stmt->execute([$pid]);
 $p = $stmt->fetch();
 
 if (!$p) { die("Project not found."); }
