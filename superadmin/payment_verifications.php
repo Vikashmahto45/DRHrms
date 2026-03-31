@@ -21,6 +21,13 @@ if ($role === 'super_admin') {
     }
 }
 
+// 0. Auto-patch for Commission Column
+try {
+    $pdo->exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS commission_percentage DECIMAL(5,2) DEFAULT 20.00 AFTER is_main_branch");
+} catch (Exception $e) {
+    try { $pdo->exec("ALTER TABLE companies ADD COLUMN commission_percentage DECIMAL(5,2) DEFAULT 20.00 AFTER is_main_branch"); } catch(Exception $ex){}
+}
+
 $msg = ''; $msgType = '';
 
 // Handle Approval / Rejection
