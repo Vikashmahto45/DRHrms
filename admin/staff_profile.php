@@ -2,6 +2,9 @@
 // /admin/staff_profile.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+header("Cache-Control: no-cache, no-store, must-revalidate"); // Cache Buster
+header("Pragma: no-cache"); 
+header("Expires: 0");
 checkAccess(['admin', 'manager']);
 
 $cid = $_SESSION['company_id'];
@@ -20,6 +23,11 @@ try {
 } catch (Exception $e) {
     try { $pdo->exec("ALTER TABLE employee_details ADD COLUMN phone VARCHAR(20) NULL AFTER company_id"); } catch(Exception $ex){}
 }
+
+// 0.1 Fetch Company Info
+$company_stmt = $pdo->prepare("SELECT name FROM companies WHERE id = ?");
+$company_stmt->execute([$cid]);
+$company_name = $company_stmt->fetchColumn() ?: 'DRHrms';
 
 // ── Handle Profile Updates ──────────────────────────────────────────
 $msg = ''; $msgType = '';
@@ -126,7 +134,34 @@ foreach($leaves as $l) {
             .profile-grid { grid-template-columns: 1fr; }
             .info-section { border: none; border-bottom: 1px solid #eee; break-inside: avoid; }
             body { background: #fff; color: #000; }
+            
+            /* ID CARD PRINT MODE */
+            body.print-id-card-only .main-content, 
+            body.print-id-card-only .profile-grid,
+            body.print-id-card-only .page-header { display: none !important; }
+            body.print-id-card-only .id-card-printable { display: block !important; margin: 0 auto; }
         }
+
+        /* ID Card Layout */
+        .id-card-printable { 
+            display: none; width: 330px; height: 500px; 
+            border: 1px solid #ddd; border-radius: 15px; 
+            overflow: hidden; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            font-family: 'Inter', sans-serif; position: relative;
+        }
+        .id-card-header { 
+            background: linear-gradient(135deg, var(--primary-color), #4f46e5); 
+            color: #fff; padding: 25px 15px; text-align: center; 
+        }
+        .id-card-header h4 { margin: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .id-card-body { padding: 30px 20px; text-align: center; }
+        .id-card-avatar { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: -60px auto 15px; background: #fff; object-fit: cover; }
+        .id-card-initials { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin: -60px auto 15px; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 3rem; font-weight: 700; }
+        .id-card-name { font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 5px; }
+        .id-card-role { color: var(--primary-color); font-weight: 600; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 25px; }
+        .id-card-footer { background: #f8fafc; padding: 20px; border-top: 1px solid #e2e8f0; position: absolute; bottom: 0; left: 0; right: 0; }
+        .id-card-info { display: flex; justify-content: space-between; font-size: 0.75rem; color: #64748b; }
+        .id-card-info strong { color: #1e293b; display: block; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -137,12 +172,16 @@ foreach($leaves as $l) {
             <a href="staff.php" style="color:var(--primary-color);text-decoration:none;font-size:0.9rem;">← Back to Staff List</a>
             <h1>Employee Profile</h1>
         </div>
-        <div style="display:flex;gap:10px;">
-            <?php if ($msg): ?>
-                <div class="badge badge-<?= $msgType ?>" style="padding:10px 15px;"><?= $msg ?></div>
-            <?php endif; ?>
-            <button class="btn btn-outline" onclick="window.print()">Print Details</button>
-            <button class="btn btn-primary" onclick="document.getElementById('editModal').classList.add('open')">Edit Profile</button>
+            <script>
+            function startIdPrint() {
+                document.body.classList.add('print-id-card-only');
+                window.print();
+                setTimeout(() => { document.body.classList.remove('print-id-card-only'); }, 500);
+            }
+            </script>
+            <button class="btn btn-outline" onclick="startIdPrint()" style="background:#4f46e5;color:#fff;border:none;">PRINT ID CARD</button>
+            <button class="btn btn-outline" onclick="window.print()">PRINT REPORT</button>
+            <button class="btn btn-primary" onclick="document.getElementById('editModal').classList.add('open')">EDIT PROFILE</button>
         </div>
     </div>
 
@@ -328,5 +367,49 @@ foreach($leaves as $l) {
         </form>
     </div>
 </div>
+
+<!-- Printable ID Card Layout -->
+<div class="id-card-printable" id="idCard">
+    <div class="id-card-header">
+        <h4><?= htmlspecialchars($company_name) ?></h4>
+    </div>
+    <div class="id-card-body">
+        <?php if ($staff['profile_image']): ?>
+            <img src="<?= BASE_URL . $staff['profile_image'] ?>" class="id-card-avatar">
+        <?php else: ?>
+            <div class="id-card-initials"><?= strtoupper(substr($staff['name'],0,2)) ?></div>
+        <?php endif; ?>
+        
+        <div class="id-card-name"><?= htmlspecialchars($staff['name']) ?></div>
+        <div class="id-card-role"><?= ucwords($staff['role']) ?></div>
+        
+        <div style="margin-top:20px; font-size:0.8rem; color:#64748b;">
+            <p><strong>Email:</strong> <?= htmlspecialchars($staff['email']) ?></p>
+            <p><strong>Phone:</strong> <?= htmlspecialchars($staff['phone'] ?: 'N/A') ?></p>
+        </div>
+    </div>
+    <div class="id-card-footer">
+        <div class="id-card-info">
+            <div>
+                Employee ID
+                <strong>#<?= str_pad($staff['id'], 3, '0', STR_PAD_LEFT) ?></strong>
+            </div>
+            <div style="text-align:right;">
+                Joining Date
+                <strong><?= $staff['joining_date'] ? date('M d, Y', strtotime($staff['joining_date'])) : 'N/A' ?></strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function printIdCard() {
+    document.body.classList.add('print-id-card-only');
+    window.print();
+    setTimeout(() => {
+        document.body.classList.remove('print-id-card-only');
+    }, 500);
+}
+</script>
 </body>
 </html>
