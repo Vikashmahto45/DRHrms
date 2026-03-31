@@ -85,7 +85,9 @@ $logs = $log_stmt->fetchAll();
         .log-item { border-left: 2px solid var(--primary-color); padding-left: 20px; margin-bottom: 20px; position: relative; }
         .log-item::before { content: ''; width: 12px; height: 12px; background: #fff; border: 2px solid var(--primary-color); border-radius: 50%; position: absolute; left: -7px; top: 0; }
         .progress-indicator { background: #f1f5f9; padding: 1.5rem; border-radius: 12px; text-align: center; }
-        .progress-circle { width: 100px; height: 100px; border-radius: 50%; border: 8px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; margin: 0 auto 10px auto; border-top-color: var(--primary-color); transform: rotate(-45deg); }
+        .progress-circle { width: 100px; height: 100px; border-radius: 50%; border: 8px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; margin: 0 auto 10px auto; border-top-color: var(--primary-color); }
+        .timeline-container { position: relative; margin-top: 1rem; }
+        .timeline-container::after { content: ''; position: absolute; width: 2px; background: #e2e8f0; top: 0; bottom: 0; left: 6px; }
     </style>
 </head>
 <body>
@@ -132,19 +134,26 @@ $logs = $log_stmt->fetchAll();
                 </div>
 
                 <div class="content-card" style="margin-top:2rem;">
-                    <h3>Progress Timeline</h3>
-                    <div style="margin-top:2rem;">
+                    <h3>Project Timeline & History</h3>
+                    <div class="timeline-container" style="margin-top:2rem;">
                         <?php foreach($logs as $l): ?>
                         <div class="log-item">
                             <div style="font-size:0.8rem; color:var(--text-muted);"><?= date('M d, Y h:i A', strtotime($l['created_at'])) ?></div>
-                            <div style="font-weight:600; margin:5px 0;">Updated to <?= $l['new_progress'] ?>% <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(Was <?= $l['old_progress'] ?>%)</span></div>
+                            <div style="font-weight:600; margin:5px 0;">
+                                <?php if($l['new_progress'] > 0): ?>
+                                    Status Update: <?= $l['new_progress'] ?>% <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(Was <?= $l['old_progress'] ?>%)</span>
+                                <?php else: ?>
+                                    System Event
+                                <?php endif; ?>
+                            </div>
                             <p style="font-size:0.9rem; margin:0; color:#475569;"><?= nl2br(htmlspecialchars($l['comment'])) ?></p>
                             <div style="font-size:0.75rem; color:var(--primary-color); margin-top:5px;">By: <?= htmlspecialchars($l['updater_name']) ?></div>
                         </div>
                         <?php endforeach; ?>
                         <div class="log-item">
                             <div style="font-size:0.8rem; color:var(--text-muted);"><?= date('M d, Y', strtotime($p['created_at'])) ?></div>
-                            <div style="font-weight:600; margin:5px 0;">Project Created</div>
+                            <div style="font-weight:600; margin:5px 0;">🏁 Project Initiated</div>
+                            <p style="font-size:0.85rem; color:var(--text-muted);">Initial creation at sub-branch office.</p>
                         </div>
                     </div>
                 </div>
@@ -152,33 +161,35 @@ $logs = $log_stmt->fetchAll();
 
             <!-- Right: Action Form -->
             <div>
-                <?php if ($p['status'] === 'Pending HQ Review' && $is_hq): ?>
-                <div class="content-card" style="border: 2px solid #ef4444;">
-                    <h3 style="color:#ef4444;">HQ Verification Required</h3>
-                    <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Verify advance payment and assign a Main Branch staff member.</p>
+                <?php if ($is_hq): ?>
+                <div class="content-card" style="border: 2px solid var(--primary-color); margin-bottom:1.5rem;">
+                    <h3 style="color:var(--primary-color);">HQ Project Management</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Confirm payment and assign staff for execution.</p>
                     <form method="POST">
                         <input type="hidden" name="action" value="verify_project">
                         <div class="form-group">
-                            <label>Confirm Advance Paid (₹)</label>
+                            <label>Verify Advance Paid (₹)</label>
                             <input type="number" name="advance_paid" class="form-control" value="<?= $p['advance_paid'] ?>" required>
                         </div>
                         <div class="form-group">
-                            <label>Assign to Main Branch Staff</label>
+                            <label>Assign/Re-assign Staff</label>
                             <select name="sales_person_id" class="form-control" required>
-                                <option value="">-- Select Staff --</option>
+                                <option value="">-- Select Staff Member --</option>
                                 <?php foreach($staff_members as $sm): ?>
-                                    <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?> (<?= $sm['role'] ?>)</option>
+                                    <option value="<?= $sm['id'] ?>" <?= $p['sales_person_id'] == $sm['id'] ? 'selected':'' ?>><?= htmlspecialchars($sm['name']) ?> (<?= ucfirst($sm['role']) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
-                            <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="margin-top:10px;">
+                            <input type="text" name="custom_sales_name" list="sp_list" class="form-control" value="<?= htmlspecialchars($p['custom_sales_name'] ?? '') ?>" placeholder="Or Custom Name" style="margin-top:10px;">
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width:100%; background:#ef4444; border:none;">Verify & Start Execution</button>
+                        <button type="submit" class="btn btn-primary" style="width:100%;">
+                            <?= $p['status'] === 'Pending HQ Review' ? 'Verify & Start Project' : 'Update HQ Assignment' ?>
+                        </button>
                     </form>
                 </div>
                 <?php endif; ?>
 
-                <div class="content-card progress-indicator" style="margin-top:<?= ($p['status'] === 'Pending HQ Review' && $is_hq) ? '1.5rem' : '0' ?>;">
-                    <div class="progress-circle" style="border-top-color: <?= ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') ?>;">
+                <div class="content-card progress-indicator">
+                    <div class="progress-circle" style="border-top-color: <?= ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') ?>; border-right-color: <?= $p['progress_pct'] >= 25 ? ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') : '#e2e8f0' ?>; border-bottom-color: <?= $p['progress_pct'] >= 50 ? ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') : '#e2e8f0' ?>; border-left-color: <?= $p['progress_pct'] >= 75 ? ($p['status'] === 'Pending HQ Review' ? '#ef4444' : 'var(--primary-color)') : '#e2e8f0' ?>;">
                         <span><?= $p['progress_pct'] ?>%</span>
                     </div>
                     <p style="font-weight:600; color:#1e293b;">Overall Progress</p>
@@ -196,15 +207,15 @@ $logs = $log_stmt->fetchAll();
                         </div>
                         <div class="form-group">
                             <label>Update Comment</label>
-                            <textarea name="comment" class="form-control" rows="3" placeholder="What task was completed?" required></textarea>
+                            <textarea name="comment" class="form-control" rows="3" placeholder="Describe the current milestone..." required></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary" style="width:100%;">Post Update</button>
+                        <button type="submit" class="btn btn-primary" style="width:100%;">Post to Timeline</button>
                     </form>
                 </div>
                 <?php elseif ($p['status'] === 'Pending HQ Review'): ?>
                     <div class="content-card" style="margin-top:1.5rem; text-align:center; padding:2rem; background:#fef2f2; border:1px dashed #ef4444;">
-                        <p style="color:#b91c1c; font-weight:600; font-size:0.9rem;">Awaiting HQ Verification</p>
-                        <p style="font-size:0.8rem; color:#7f1d1d;">Once the Main Branch verifies the advance payment, work will begin.</p>
+                        <p style="color:#b91c1c; font-weight:600; font-size:0.9rem;">Awaiting HQ Review</p>
+                        <p style="font-size:0.8rem; color:#7f1d1d;">Work will begin once the Main Branch verifies the advance payment and assigns staff.</p>
                     </div>
                 <?php endif; ?>
             </div>

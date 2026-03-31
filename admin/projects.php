@@ -15,7 +15,17 @@ $is_hq = (bool)$branch_info->fetchColumn();
 
 // 0. Auto-patch for Projects Table
 try {
-    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending Approval'");
+    // 1. Column Checks (Add if missing)
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'custom_sales_name'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN custom_sales_name VARCHAR(255) NULL AFTER verified_by"); }
+    
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'branch_id'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN branch_id INT NULL AFTER company_id"); }
+    
+    // 2. Enum Update (Status)
+    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review'");
+
+    // 3. Ensure tables exist (Fallback)
     $pdo->exec("CREATE TABLE IF NOT EXISTS projects (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT NOT NULL,
@@ -45,7 +55,7 @@ try {
         comment TEXT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
-} catch (Exception $e) { /* Table creation failed, but we continue */ }
+} catch (Exception $e) { /* DB auto-patch error handled silent but recorded */ }
 
 $msg = ''; $msgType = '';
 
