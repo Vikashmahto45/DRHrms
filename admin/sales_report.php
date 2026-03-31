@@ -2,6 +2,7 @@
 // /admin/sales_report.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+ini_set('display_errors', 1); error_reporting(E_ALL);
 checkAccess(['admin', 'manager']);
 
 $uid = $_SESSION['user_id'];
@@ -13,7 +14,22 @@ $end_date = $_GET['end_date'] ?? date('Y-m-d');
 
 // Fetch Accessible Branch IDs for HQ visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
+if (empty($branch_ids)) { $branch_ids = [$cid]; } // Safety fallback
 $cids_in = implode(',', $branch_ids);
+
+// 0. Build/Patch Schema for live environment
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS dsr_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        dsr_id INT NOT NULL,
+        product_id INT NULL,
+        custom_price DECIMAL(15,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'branch_id'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN branch_id INT NULL AFTER company_id"); }
+} catch (Exception $e) { /* Patching error handled silent */ }
 
 /** 
  * 1. UNIFIED REVENUE QUERY 
@@ -62,9 +78,14 @@ $query = "
     ORDER BY sale_date DESC
 ";
 
-$stmt = $pdo->prepare($query);
-$stmt->execute([$start_date, $end_date, $start_date, $end_date]);
-$sales = $stmt->fetchAll();
+$sales = []; $sql_error = '';
+try {
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([$start_date, $end_date, $start_date, $end_date]);
+    $sales = $stmt->fetchAll();
+} catch (Exception $e) {
+    $sql_error = $e->getMessage();
+}
 
 // 2. Summary Stats
 $total_revenue = 0;
@@ -110,6 +131,14 @@ foreach ($sales as $s) {
             </div>
             <button onclick="window.print()" class="btn btn-outline">🖨️ Print Report</button>
         </div>
+
+        <?php if ($sql_error): ?>
+            <div class="alert alert-danger" style="margin-bottom: 2rem; background: #fee2e2; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 8px; color: #b91c1c;">
+                <strong>⚠️ Database Synchronization Issue:</strong><br>
+                <?= htmlspecialchars($sql_error) ?><br><br>
+                <em>Action Required: Ensure the DSR and Projects tables are up to date.</em>
+            </div>
+        <?php endif; ?>
 
         <!-- Date Filters -->
         <form class="filter-bar no-print">
