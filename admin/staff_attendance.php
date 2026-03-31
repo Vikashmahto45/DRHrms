@@ -2,7 +2,7 @@
 // /admin/staff_attendance.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-// Staff can access this
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php"); exit();
 }
@@ -20,10 +20,19 @@ $stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id=? AND date=CURDATE
 $stmt->execute([$uid]);
 $today_record = $stmt->fetch();
 
-// Get staff's shift (if assigned - for now just showing general info)
-$shifts = $pdo->prepare("SELECT * FROM shifts WHERE company_id=?");
-$shifts->execute([$cid]);
-$all_shifts = $shifts->fetchAll();
+// Fetch attendance history (last 30 records)
+$history_stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id=? ORDER BY date DESC LIMIT 30");
+$history_stmt->execute([$uid]);
+$history = $history_stmt->fetchAll();
+
+// Helper to calculate duration
+function getDuration($in, $out) {
+    if (!$in || !$out) return "---";
+    $start = new DateTime($in);
+    $end = new DateTime($out);
+    $diff = $start->diff($end);
+    return $diff->format('%h hrs %i mins');
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -32,39 +41,12 @@ $all_shifts = $shifts->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Attendance - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
     <style>
-        .attendance-card {
-            max-width: 500px;
-            margin: 2rem auto;
-            text-align: center;
-            padding: 3rem 2rem;
-        }
-        #camera-preview {
-            width: 100%;
-            max-width: 320px;
-            height: 240px;
-            background: #000;
-            border-radius: 12px;
-            margin: 1.5rem auto;
-            display: none;
-            object-fit: cover;
-        }
-        #captured-photo {
-            width: 100%;
-            max-width: 320px;
-            border-radius: 12px;
-            margin: 1.5rem auto;
-            display: none;
-        }
-        .status-dot {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
+        .attendance-card { max-width: 500px; margin: 0 auto 2rem auto; text-align: center; padding: 3rem 2rem; }
+        #camera-preview { width: 100%; max-width: 320px; height: 240px; background: #000; border-radius: 12px; margin: 1.5rem auto; display: none; object-fit: cover; }
+        #captured-photo { width: 100%; max-width: 320px; border-radius: 12px; margin: 1.5rem auto; display: none; }
         .status-online { background: #10b981; box-shadow: 0 0 10px #10b981; }
         .status-offline { background: #6b7280; }
     </style>
@@ -81,7 +63,7 @@ $all_shifts = $shifts->fetchAll();
                 <?= date('l, F j, Y') ?> | <span id="live-clock">--:--:--</span>
             </p>
 
-            <div id="status-display" style="margin-bottom: 2rem;">
+            <div id="status-display">
                 <?php if ($today_record && $today_record['clock_out']): ?>
                     <div class="badge" style="background:rgba(239,68,68,0.1); color:#ef4444; padding: 1rem 2rem; font-size: 1rem;">
                         Shift Completed
@@ -102,7 +84,7 @@ $all_shifts = $shifts->fetchAll();
                         Not Clocked In
                     </div>
                     
-                    <div id="security-check" style="margin-top: 1.5rem; text-align: left; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px;">
+                    <div id="security-check" style="margin-top: 1.5rem; text-align: left; background: rgba(0,0,0,0.03); padding: 1rem; border-radius: 8px;">
                         <div id="gps-status" style="font-size: 0.85rem; margin-bottom: 8px;">🛰️ Detecting Location...</div>
                         <div id="ip-status" style="font-size: 0.85rem;">🌐 Checking Network...</div>
                     </div>
@@ -120,13 +102,63 @@ $all_shifts = $shifts->fetchAll();
             </div>
         </div>
 
+        <div class="content-card">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Attendance History</h2>
+                <div style="font-size:0.85rem; color:var(--text-muted);">Last 30 Records</div>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Clock In</th>
+                            <th>Clock Out</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($history as $h): ?>
+                            <tr>
+                                <td>
+                                    <div style="font-weight:600;"><?= date('D, M d', strtotime($h['date'])) ?></div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted);"><?= date('Y', strtotime($h['date'])) ?></div>
+                                </td>
+                                <td><?= $h['clock_in'] ? date('h:i A', strtotime($h['clock_in'])) : '---' ?></td>
+                                <td><?= $h['clock_out'] ? date('h:i A', strtotime($h['clock_out'])) : '---' ?></td>
+                                <td>
+                                    <?php if($h['clock_in'] && $h['clock_out']): ?>
+                                        <span style="font-weight:600; color:#4f46e5;"><?= getDuration($h['clock_in'], $h['clock_out']) ?></span>
+                                    <?php else: ?>
+                                        <span style="color:var(--text-muted);">---</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="badge" style="background:rgba(16,185,129,0.1); color:#10b981; font-weight:700;">
+                                        <?= htmlspecialchars($h['status'] ?? 'Present') ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <?php if(empty($history)): ?>
+                            <tr>
+                                <td colspan="5" style="text-align:center; padding:3rem; color:var(--text-muted);">No records found. Your first clock-in will appear here.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
 </div>
 
 <script>
 // Live Clock
 setInterval(() => {
-    document.getElementById('live-clock').textContent = new Date().toLocaleTimeString();
+    const clock = document.getElementById('live-clock');
+    if(clock) clock.textContent = new Date().toLocaleTimeString();
 }, 1000);
 
 let stream;
@@ -152,35 +184,37 @@ function takeSnapshot() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    
     photoData = canvas.toDataURL('image/jpeg');
-    
     document.getElementById('captured-photo').src = photoData;
     document.getElementById('captured-photo').style.display = 'block';
     video.style.display = 'none';
-    
-    // Stop camera stream
     stream.getTracks().forEach(track => track.stop());
-    
     document.getElementById('btn-snap').style.display = 'none';
     document.getElementById('btn-clockin').style.display = 'block';
 }
 
-// Geo-fencing Detection
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((pos) => {
         userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        document.getElementById('gps-status').innerHTML = "✅ Location Verified";
-        document.getElementById('gps-status').style.color = "#10b981";
+        const gps = document.getElementById('gps-status');
+        if(gps) {
+            gps.innerHTML = "✅ Location Verified";
+            gps.style.color = "#10b981";
+        }
     }, (err) => {
-        document.getElementById('gps-status').innerHTML = "❌ Location Access Denied";
-        document.getElementById('gps-status').style.color = "#ef4444";
+        const gps = document.getElementById('gps-status');
+        if(gps) {
+            gps.innerHTML = "❌ Location Access Denied";
+            gps.style.color = "#ef4444";
+        }
     });
 }
 
-// IP Check (Simulated for status, verified on backend)
-document.getElementById('ip-status').innerHTML = "✅ Network Verified";
-document.getElementById('ip-status').style.color = "#10b981";
+const ipStatus = document.getElementById('ip-status');
+if(ipStatus) {
+    ipStatus.innerHTML = "✅ Network Verified";
+    ipStatus.style.color = "#10b981";
+}
 
 async function handleClockAction(type) {
     const formData = new FormData();
