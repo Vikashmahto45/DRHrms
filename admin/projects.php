@@ -90,10 +90,10 @@ foreach($results as $res) {
     $projects[] = $res;
 }
 
-// Fetch Sales Persons for direct entry
-$sp_stmt = $pdo->prepare("SELECT id, name FROM users WHERE company_id = ? AND role = 'sales_person'");
+// Fetch All Staff/Project Members for assignment (excluding super_admin)
+$sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
 $sp_stmt->execute([$cid]);
-$sales_persons = $sp_stmt->fetchAll();
+$staff_members = $sp_stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -208,12 +208,12 @@ $sales_persons = $sp_stmt->fetchAll();
                 </div>
             </div>
             <div class="form-group">
-                <label>Assign to Sales Person (Optional)</label>
+                <label>Assign to Staff Member (Optional)</label>
                 <div style="display:flex; gap:10px;">
                     <select name="sales_person_id" class="form-control" style="flex:1;">
                         <option value="">-- No User Selected --</option>
-                        <?php foreach($sales_persons as $sp): ?>
-                            <option value="<?= $sp['id'] ?>"><?= htmlspecialchars($sp['name']) ?></option>
+                        <?php foreach($staff_members as $sm): ?>
+                            <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?> (<?= ucfirst($sm['role']) ?>)</option>
                         <?php endforeach; ?>
                     </select>
                     <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="flex:1;">
