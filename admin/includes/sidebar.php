@@ -35,6 +35,9 @@ if ($cid > 0) {
         </a>
 
         <?php if ($role === 'sales_person' || $role === 'admin'): ?>
+            <a href="projects.php" class="nav-item <?= $current_page==='projects.php'?'active':'' ?>">
+                <span class="nav-icon">🏗️</span> Project Tracking
+            </a>
             <a href="<?= BASE_URL ?>admin/dsr.php" class="nav-item <?= $current_page==='dsr.php'?'active':'' ?>">
                 <span class="nav-icon">📝</span> <?= $role === 'admin' ? 'DSR Reports' : 'Daily Report (DSR)' ?>
             </a>
@@ -47,7 +50,10 @@ if ($cid > 0) {
 
         <?php if ($role === 'super_admin'): ?>
             <a href="payment_verifications.php" class="nav-item <?= $current_page==='payment_verifications.php'?'active':'' ?>">
-                <span class="nav-icon">🛡️</span> Payment Verifications
+                <span class="nav-icon">💳</span> Verify Branch Sales
+            </a>
+            <a href="../admin/projects.php" class="nav-item <?= $current_page==='projects.php'?'active':'' ?>">
+                <span class="nav-icon">🏗️</span> Global Projects
             </a>
             <a href="finance_stats.php" class="nav-item <?= $current_page==='finance_stats.php'?'active':'' ?>">
                 <span class="nav-icon">📉</span> Global Revenue

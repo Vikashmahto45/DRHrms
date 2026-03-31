@@ -100,6 +100,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Convert DSR to Project Logic
+if (isset($_GET['convert_project'])) {
+    $dsr_id = (int)$_GET['convert_project'];
+    try {
+        // Fetch DSR & its latest total value
+        $stmt = $pdo->prepare("SELECT d.*, (SELECT SUM(custom_price) FROM dsr_items WHERE dsr_id = d.id) as total_val FROM dsr d WHERE d.id = ? AND d.user_id = ?");
+        $stmt->execute([$dsr_id, $uid]);
+        $dsr_data = $stmt->fetch();
+        
+        if ($dsr_data && $dsr_data['deal_status'] === 'Closed Won') {
+            // Check if already converted
+            $check = $pdo->prepare("SELECT id FROM projects WHERE client_name = ? AND project_name LIKE ? AND company_id = ?");
+            $check->execute([$dsr_data['client_name'], "%" . $dsr_data['project_details'] . "%", $cid]);
+            if (!$check->fetch()) {
+                $ins = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, project_description, total_value, status, progress_pct) VALUES (?,?,?,?,?,?,?, 'Pending Approval', 0)");
+                $ins->execute([$cid, $branch_ids[0], $uid, $dsr_data['client_name'], "Project: " . ($dsr_data['project_details'] ?: 'New Deal'), $dsr_data['notes'], $dsr_data['total_val']]);
+                header("Location: projects.php?msg=Converted to Project. Awaiting Admin Verification."); exit();
+            } else { $msg = "Already converted."; $msgType = "warning"; }
+        }
+    } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
+}
+
 // Fetch Past Clients for Datalist (Salesman Only)
 $past_clients = [];
 if ($role === 'sales_person') {
@@ -237,6 +259,9 @@ foreach ($reports as $r) {
                             <div style="display:flex; align-items:center; gap:15px;">
                                 <?php if ($latest['total_deal_value'] > 0): ?>
                                     <span style="font-weight:700; color:#10b981;">₹<?= number_format($latest['total_deal_value'], 0) ?></span>
+                                <?php endif; ?>
+                                <?php if ($latest['deal_status'] === 'Closed Won'): ?>
+                                    <a href="?convert_project=<?= $latest['id'] ?>" class="btn btn-sm btn-primary" style="background:#4f46e5; border:none;" onclick="event.stopPropagation()">🏗️ Convert to Project</a>
                                 <?php endif; ?>
                                 <span style="color:var(--text-muted);">&#9660;</span>
                             </div>
