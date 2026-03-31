@@ -12,15 +12,25 @@ $cids_in = implode(',', $branch_ids);
 
 $msg = ''; $msgType = '';
 
-// DB Schema Auto-patch for deal_status and sales fields
+// DB Schema Auto-patch for CRM & Multi-Product Support
 try {
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS deal_status VARCHAR(50) DEFAULT 'In Progress' AFTER visit_purpose");
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER user_id");
-    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status");
-} catch (Exception $e) { /* Fallback for older MySQL without IF NOT EXISTS */
-    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN product_id INT NULL DEFAULT NULL AFTER user_id"); } catch(Exception $ex){}
-    try { $pdo->exec("ALTER TABLE dsr ADD COLUMN sold_price DECIMAL(15,2) NULL DEFAULT NULL AFTER deal_status"); } catch(Exception $ex){}
-}
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS activity_type VARCHAR(50) DEFAULT 'Regular Visit' AFTER visit_purpose");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS project_details TEXT NULL AFTER notes");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS dsr_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        dsr_id INT NOT NULL,
+        product_id INT NOT NULL,
+        custom_price DECIMAL(15,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    
+    // Migration: Move existing single product_id/sold_price to dsr_items if not already done
+    $checkMigrated = $pdo->query("SELECT COUNT(*) FROM dsr_items")->fetchColumn();
+    if ($checkMigrated == 0) {
+        $pdo->exec("INSERT INTO dsr_items (dsr_id, product_id, custom_price) 
+                    SELECT id, product_id, sold_price FROM dsr WHERE product_id IS NOT NULL");
+    }
+} catch (Exception $e) { /* Fallback for MySQL compatibility */ }
 
 // Fetch products for dropdown
 $stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
@@ -30,21 +40,29 @@ $all_products = $stmt->fetchAll();
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
     $client = trim($_POST['client_name'] ?? '');
+    $activity_type = trim($_POST['activity_type'] ?? 'Regular Visit');
     $purpose = trim($_POST['visit_purpose'] ?? '');
     $deal_status = trim($_POST['deal_status'] ?? 'In Progress');
-    $product_id = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
-    $sold_price = !empty($_POST['sold_price']) ? (float)$_POST['sold_price'] : null;
     $notes = trim($_POST['notes'] ?? '');
+    $project_details = trim($_POST['project_details'] ?? '');
     $lat = $_POST['latitude'] ?? '';
     $lng = $_POST['longitude'] ?? '';
     $date = date('Y-m-d');
 
-    if ($client && $purpose && $lat && $lng) {
+    // Products Array
+    $product_ids = $_POST['product_ids'] ?? [];
+    $custom_prices = $_POST['custom_prices'] ?? [];
+
+    // Validation: Only Visits require Camera/GPS
+    $is_visit = ($activity_type === 'Regular Visit');
+    $gps_locked = $lat && $lng;
+    $photo_b64 = $_POST['live_photo_b64'] ?? '';
+
+    if ($client && $purpose && (!$is_visit || ($gps_locked && $photo_b64))) {
         $photo_path = '';
-        $photo_b64 = $_POST['live_photo_b64'] ?? '';
         
-        if ($photo_b64) {
-            $photo_b64 = str_replace('data:image/png;base64,', '', $photo_b64);
+        if ($photo_b64 && $is_visit) {
+            $photo_b64 = str_replace(['data:image/png;base64,', 'data:image/jpeg;base64,'], '', $photo_b64);
             $photo_b64 = str_replace(' ', '+', $photo_b64);
             $data = base64_decode($photo_b64);
             $filename = "dsr_" . time() . "_" . uniqid() . ".png";
@@ -56,14 +74,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         try {
-            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, visit_purpose, deal_status, product_id, sold_price, visit_photo, notes, latitude, longitude, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$uid, $cid, $client, $purpose, $deal_status, $product_id, $sold_price, $photo_path, $notes, $lat, $lng, $date]);
-            $msg = "DSR submitted and client timeline updated successfully!"; $msgType = 'success';
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$uid, $cid, $client, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $date]);
+            $new_dsr_id = $pdo->lastInsertId();
+
+            // Insert Multi-Products
+            if (!empty($product_ids)) {
+                $item_stmt = $pdo->prepare("INSERT INTO dsr_items (dsr_id, product_id, custom_price) VALUES (?,?,?)");
+                for ($i=0; $i<count($product_ids); $i++) {
+                    if (!empty($product_ids[$i])) {
+                        $item_stmt->execute([$new_dsr_id, (int)$product_ids[$i], (float)$custom_prices[$i]]);
+                    }
+                }
+            }
+
+            $pdo->commit();
+            $msg = "CRM Entry logged successfully!"; $msgType = 'success';
         } catch (Exception $e) {
+            $pdo->rollBack();
             $msg = "Error: " . $e->getMessage(); $msgType = 'error';
         }
     } else {
-        $msg = "Missing required fields or GPS location."; $msgType = 'error';
+        $msg = "Missing required fields. Regular Visits require GPS and Live Photo."; $msgType = 'error';
     }
 }
 
@@ -77,14 +110,21 @@ if ($role === 'sales_person') {
 
 // Fetch Reports
 if ($role === 'sales_person') {
-    $stmt = $pdo->prepare("SELECT d.*, p.name as product_name FROM dsr d LEFT JOIN products p ON d.product_id = p.id WHERE d.user_id = ? ORDER BY d.visit_date DESC, d.created_at DESC");
+    $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
     $stmt->execute([$uid]);
 } else {
-    // Admins see all reports for the company and sub-branches
-    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name, p.name as product_name FROM dsr d JOIN users u ON d.user_id = u.id LEFT JOIN companies c ON d.company_id = c.id LEFT JOIN products p ON d.product_id = p.id WHERE d.company_id IN ($cids_in) ORDER BY d.visit_date DESC, d.created_at DESC");
+    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name FROM dsr d JOIN users u ON d.user_id = u.id LEFT JOIN companies c ON d.company_id = c.id WHERE d.company_id IN ($cids_in) ORDER BY d.visit_date DESC, d.created_at DESC");
     $stmt->execute();
 }
 $reports = $stmt->fetchAll();
+
+// Fetch Items for all reports
+foreach ($reports as &$r) {
+    $it_stmt = $pdo->prepare("SELECT di.*, p.name as product_name FROM dsr_items di JOIN products p ON di.product_id = p.id WHERE di.dsr_id = ?");
+    $it_stmt->execute([$r['id']]);
+    $r['items'] = $it_stmt->fetchAll();
+    $r['total_deal_value'] = array_sum(array_column($r['items'], 'custom_price'));
+}
 
 // Group reports by Client Name
 $grouped_clients = [];
@@ -191,45 +231,81 @@ foreach ($reports as $r) {
                                 </div>
                                 <div>
                                     <h3 style="margin:0; font-size:1.1rem; color:#1e293b;"><?= htmlspecialchars($client_name) ?></h3>
-                                    <div style="font-size:0.8rem; color:var(--text-muted);">Last Visit: <?= date('M d, Y', strtotime($latest['visit_date'])) ?> &bull; <?= count($visits) ?> Total Visits</div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted);">Status: <strong><?= htmlspecialchars($latest['deal_status']) ?></strong> &bull; <?= count($visits) ?> Activities</div>
                                 </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:15px;">
-                                <span class="status-badge <?= $st_class ?>"><?= htmlspecialchars($latest['deal_status'] ?? 'In Progress') ?></span>
+                                <?php if ($latest['total_deal_value'] > 0): ?>
+                                    <span style="font-weight:700; color:#10b981;">₹<?= number_format($latest['total_deal_value'], 0) ?></span>
+                                <?php endif; ?>
                                 <span style="color:var(--text-muted);">&#9660;</span>
                             </div>
                         </div>
                         <div class="timeline-body">
                             <!-- Visits Sequence -->
-                            <?php foreach($visits as $v): ?>
+                            <?php foreach($visits as $v): 
+                                $act_icon = match($v['activity_type']) {
+                                    'Phone Call' => '📞',
+                                    'Email' => '📧',
+                                    'Meeting' => '🤝',
+                                    'Follow-up' => '🔄',
+                                    default => '📍'
+                                };
+                            ?>
                                 <div class="visit-event">
-                                    <div style="background:#fff; border:1px solid var(--glass-border); padding:1rem; border-radius:8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                                        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                                    <div style="background:#fff; border:1px solid var(--glass-border); padding:1.2rem; border-radius:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                        <div style="display:flex; justify-content:space-between; margin-bottom: 12px; align-items:flex-start;">
                                             <div>
-                                                <strong style="color:var(--primary-color); font-size:1rem;"><?= htmlspecialchars($v['visit_purpose']) ?></strong>
-                                                <?php if($role !== 'sales_person'): ?>
-                                                    <div style="margin-top:4px;">
-                                                        <span style="font-size:0.75rem; color:var(--text-muted);">👤 Agent: <?= htmlspecialchars($v['staff_name']) ?></span>
-                                                        <span style="font-size:0.75rem; background:#f1f5f9; color:#6366f1; padding:2px 6px; border-radius:4px; margin-left:8px; font-weight:600;">🏢 Branch: <?= htmlspecialchars($v['company_name']) ?></span>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <?php if ($v['product_name']): ?>
-                                                    <div style="font-size:0.85rem; color:#6366f1; font-weight:600; margin-top:4px;">📦 Product: <?= htmlspecialchars($v['product_name']) ?></div>
-                                                <?php endif; ?>
-                                                <?php if ($v['sold_price']): ?>
-                                                    <div style="font-size:0.9rem; color:#10b981; font-weight:700; margin-top:2px;">💰 Sold for: ₹<?= number_format($v['sold_price'], 2) ?></div>
-                                                <?php endif; ?>
+                                                <div style="display:flex; align-items:center; gap:8px;">
+                                                    <span style="font-size:1.2rem;"><?= $act_icon ?></span>
+                                                    <strong style="color:var(--primary-color); font-size:1.1rem;"><?= htmlspecialchars($v['visit_purpose']) ?></strong>
+                                                    <span class="status-badge st-<?= str_replace(' ', '-', $v['deal_status']) ?>" style="font-size:0.65rem;"><?= $v['deal_status'] ?></span>
+                                                </div>
+                                                <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+                                                    Type: <strong><?= $v['activity_type'] ?></strong>
+                                                    <?php if($role !== 'sales_person'): ?>
+                                                        &bull; By: <strong><?= htmlspecialchars($v['staff_name']) ?></strong>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                             <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;"><?= date('M d, Y', strtotime($v['visit_date'])) ?></span>
                                         </div>
-                                        <p style="font-size:0.9rem; color:#475569; margin: 0 0 10px 0; line-height:1.5;"><?= nl2br(htmlspecialchars($v['notes'])) ?></p>
+
+                                        <!-- Project / Note Details -->
+                                        <div style="margin-bottom:15px;">
+                                            <p style="font-size:0.95rem; color:#1e293b; margin: 0 0 8px 0; line-height:1.6;"><?= nl2br(htmlspecialchars($v['notes'])) ?></p>
+                                            <?php if ($v['project_details']): ?>
+                                                <div style="background:#f8fafc; padding:10px; border-left:3px solid #6366f1; border-radius:4px; font-size:0.85rem; color:#475569;">
+                                                    <strong>Project Details:</strong><br>
+                                                    <?= nl2br(htmlspecialchars($v['project_details'])) ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <!-- Multi-Product List -->
+                                        <?php if (!empty($v['items'])): ?>
+                                            <div style="border-top:1px dashed #e2e8f0; padding-top:10px; margin-top:10px;">
+                                                <table style="width:100%; font-size:0.85rem;">
+                                                    <?php foreach($v['items'] as $item): ?>
+                                                        <tr>
+                                                            <td style="color:var(--text-muted); padding:2px 0;">📦 <?= htmlspecialchars($item['product_name']) ?></td>
+                                                            <td style="text-align:right; font-weight:600; color:#10b981;">₹<?= number_format($item['custom_price'], 2) ?></td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                    <tr style="border-top:1px solid #f1f5f9; font-weight:700;">
+                                                        <td style="padding-top:5px;">Total Deal Value</td>
+                                                        <td style="text-align:right; padding-top:5px; color:var(--primary-color);">₹<?= number_format($v['total_deal_value'], 2) ?></td>
+                                                    </tr>
+                                                </table>
+                                            </div>
+                                        <?php endif; ?>
                                         
                                         <?php if ($v['visit_photo']): ?>
                                             <img src="<?= BASE_URL . $v['visit_photo'] ?>" class="report-pic" alt="Live Capture" onclick="window.open(this.src)">
                                         <?php endif; ?>
                                         
                                         <?php if ($v['latitude']): ?>
-                                            <div class="geo-info">
+                                            <div class="geo-info" style="margin-top:12px;">
                                                 <a href="https://maps.google.com/?q=<?= $v['latitude'] ?>,<?= $v['longitude'] ?>" target="_blank" style="color:var(--primary-color); text-decoration:none;">
                                                     📍 View GPS Location (<?= htmlspecialchars($v['latitude']) ?>, <?= htmlspecialchars($v['longitude']) ?>)
                                                 </a>
@@ -256,9 +332,9 @@ foreach ($reports as $r) {
 </datalist>
 
 <div class="modal-overlay" id="dsrModal">
-    <div class="modal-box" style="max-width:550px;">
+    <div class="modal-box" style="max-width:650px;">
         <button class="modal-close" onclick="closeDsrModal()">&times;</button>
-        <h3>Log Field Visit</h3>
+        <h3>Log Sales Activity (CRM)</h3>
         
         <form method="POST" id="dsrForm">
             <input type="hidden" name="action" value="submit_dsr">
@@ -272,64 +348,80 @@ foreach ($reports as $r) {
                     <input type="text" name="client_name" list="pastClients" class="form-control" required placeholder="Select existing or type new...">
                 </div>
                 <div class="form-group" style="flex:1;">
-                    <label>Deal Status *</label>
-                    <select name="deal_status" id="dealStatusSelect" class="form-control" required onchange="toggleSoldPrice()">
-                        <option value="Initial Meeting">Initial Meeting</option>
-                        <option value="Follow-up">Follow-up</option>
-                        <option value="Negotiating">Negotiating</option>
-                        <option value="Closed Won">Closed Won</option>
-                        <option value="Closed Lost">Closed Lost</option>
+                    <label>Activity Type *</label>
+                    <select name="activity_type" id="activityTypeSelect" class="form-control" required onchange="toggleRequirements()">
+                        <option value="Regular Visit">Regular Visit (On-Field)</option>
+                        <option value="Phone Call">Phone Call / Discussion</option>
+                        <option value="Email">Email Communication</option>
+                        <option value="Follow-up">Regular Follow-up</option>
+                        <option value="Meeting">Formal Meeting / Demo</option>
                     </select>
                 </div>
             </div>
 
             <div class="form-row">
-                <div class="form-group" style="flex:2;">
-                    <label>Related Product/Service</label>
-                    <select name="product_id" class="form-control">
-                        <option value="">-- No specific product --</option>
-                        <?php foreach($all_products as $p): ?>
-                            <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name']) ?> (₹<?= number_format($p['price'], 0) ?>)</option>
-                        <?php endforeach; ?>
+                <div class="form-group" style="flex:1;">
+                    <label>Deal Status *</label>
+                    <select name="deal_status" id="dealStatusSelect" class="form-control" required>
+                        <option value="Initial Meeting">Initial Meeting</option>
+                        <option value="Negotiating">Negotiating</option>
+                        <option value="Proposal Sent">Proposal Sent</option>
+                        <option value="Closed Won">Closed Won (Sold)</option>
+                        <option value="Closed Lost">Closed Lost</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex:1; display:none;" id="soldPriceGroup">
-                    <label>Sold Price (₹) *</label>
-                    <input type="number" step="0.01" name="sold_price" class="form-control" placeholder="0.00">
+                <div class="form-group" style="flex:1;">
+                    <label>Purpose / Short Subject *</label>
+                    <input type="text" name="visit_purpose" class="form-control" required placeholder="e.g. Sales pitch, follow up">
                 </div>
             </div>
-            
-            <div class="form-group">
-                <label>Purpose of Visit *</label>
-                <select name="visit_purpose" class="form-control" required>
-                    <option value="Introduction">Introduction</option>
-                    <option value="Product Demo">Product Demo</option>
-                    <option value="Contract Signing">Contract Signing</option>
-                    <option value="Payment Collection">Payment Collection</option>
-                    <option value="Routine Check-in">Routine Check-in</option>
-                </select>
-            </div>
 
-            <div class="form-group">
+            <!-- Multi-Product Interface -->
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <label style="font-weight:600; color:#475569; display:block; margin-bottom:10px;">Select Products & Services</label>
+                <div id="productRows">
+                    <div class="form-row" style="margin-bottom:10px;">
+                        <div class="form-group" style="flex:2; margin-bottom:0;">
+                            <select name="product_ids[]" class="form-control" onchange="updateDefaultPrice(this)">
+                                <option value="">-- Select Product --</option>
+                                <?php foreach($all_products as $p): ?>
+                                    <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>"><?= htmlspecialchars($p['name']) ?> (₹<?= number_format($p['price'], 0) ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex:1; margin-bottom:0;">
+                            <input type="number" step="0.01" name="custom_prices[]" class="form-control" placeholder="Price ₹">
+                        </div>
+                        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline btn-sm" onclick="addProductRow()" style="margin-top:5px;">+ Add Another Item</button>
+            </div>
+            
+            <div class="form-group" id="cameraGroup">
                 <label>Secure Live Photo (Gallery Blocked) *</label>
                 <div class="cam-wrapper">
                     <video id="videoFeed" autoplay playsinline></video>
                     <img id="photoPreview">
                     <canvas id="canvasFeed" style="display:none;"></canvas>
-                    
                     <div class="cam-overlay" id="camControls">
-                        <button type="button" class="btn btn-primary" onclick="snapPhoto()" style="padding:10px 20px; border-radius:30px; font-weight:bold; box-shadow:0 4px 15px rgba(0,0,0,0.3);">📸 Snap Photo</button>
+                        <button type="button" class="btn btn-primary" onclick="snapPhoto()" style="padding:10px 20px; border-radius:30px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">📸 Snap Photo</button>
                     </div>
                     <div class="cam-overlay" id="camRetake" style="display:none;">
                         <button type="button" class="btn btn-outline" onclick="retakePhoto()" style="background:#fff; padding:8px 15px; border-radius:30px; font-weight:bold;">🔄 Retake</button>
                     </div>
                 </div>
-                <small style="color:var(--text-muted); display:block; margin-top:5px;">This system explicitly prohibits file uploads. You must snap a photo live on location.</small>
             </div>
 
-            <div class="form-group">
-                <label>Visit Notes</label>
-                <textarea name="notes" class="form-control" rows="2" placeholder="Documentation of the meeting..."></textarea>
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label>Activity Summary / Notes</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="What happened in this interaction?"></textarea>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Project Details / Spec</label>
+                    <textarea name="project_details" class="form-control" rows="2" placeholder="Technical specs or requirements..."></textarea>
+                </div>
             </div>
 
             <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--glass-border); padding-top:15px;">
@@ -339,7 +431,7 @@ foreach ($reports as $r) {
                 </div>
                 <div style="display:flex; gap:10px;">
                     <button type="button" class="btn btn-outline" onclick="closeDsrModal()">Cancel</button>
-                    <button type="button" id="submitDSRBtn" class="btn btn-primary" disabled onclick="validateAndSubmit()">Submit Secured Report</button>
+                    <button type="button" id="submitDSRBtn" class="btn btn-primary" onclick="validateAndSubmit()">Submit Secured Report</button>
                 </div>
             </div>
         </form>
@@ -350,17 +442,62 @@ foreach ($reports as $r) {
 <script>
 let streamGlobal = null;
 
+function addProductRow() {
+    const container = document.getElementById('productRows');
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.style.marginBottom = '10px';
+    row.innerHTML = `
+        <div class="form-group" style="flex:2; margin-bottom:0;">
+            <select name="product_ids[]" class="form-control" onchange="updateDefaultPrice(this)">
+                <option value="">-- Select Product --</option>
+                <?php foreach($all_products as $p): ?>
+                    <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>"><?= htmlspecialchars($p['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group" style="flex:1; margin-bottom:0;">
+            <input type="number" step="0.01" name="custom_prices[]" class="form-control" placeholder="Price ₹">
+        </div>
+        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove()">✕</button>
+    `;
+    container.appendChild(row);
+}
+
+function updateDefaultPrice(select) {
+    const price = select.options[select.selectedIndex].dataset.price;
+    const input = select.parentElement.nextElementSibling.querySelector('input');
+    if(price) input.value = price;
+}
+
+function toggleRequirements() {
+    const type = document.getElementById('activityTypeSelect').value;
+    const camGroup = document.getElementById('cameraGroup');
+    const locStatus = document.getElementById('locStatus');
+    const btn = document.getElementById('submitDSRBtn');
+
+    if (type === 'Regular Visit') {
+        camGroup.style.display = 'block';
+        locStatus.style.display = 'flex';
+        btn.disabled = !document.getElementById('latInp').value;
+        startCamera();
+        lockGPS();
+    } else {
+        camGroup.style.display = 'none';
+        locStatus.style.display = 'none';
+        btn.disabled = false;
+        if (streamGlobal) streamGlobal.getTracks().forEach(t => t.stop());
+    }
+}
+
 function openDsrModal() {
     document.getElementById('dsrModal').classList.add('open');
-    startCamera();
-    lockGPS();
+    toggleRequirements();
 }
 
 function closeDsrModal() {
     document.getElementById('dsrModal').classList.remove('open');
-    if (streamGlobal) {
-        streamGlobal.getTracks().forEach(track => track.stop());
-    }
+    if (streamGlobal) streamGlobal.getTracks().forEach(t => t.stop());
 }
 
 function startCamera() {
@@ -376,30 +513,21 @@ function startCamera() {
         streamGlobal = stream;
         video.srcObject = stream;
     })
-    .catch(err => {
-        alert("Camera access denied or unsupported! Please grant camera permissions to log your visit.");
-    });
+    .catch(err => console.log("Camera access blocked"));
 }
 
 function snapPhoto() {
     const video = document.getElementById('videoFeed');
     const canvas = document.getElementById('canvasFeed');
     const preview = document.getElementById('photoPreview');
-    
-    // Draw frame to canvas
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Get Base64
     const dataUrl = canvas.toDataURL('image/png');
     document.getElementById('photoB64').value = dataUrl;
-    
-    // Show Preview
     preview.src = dataUrl;
     preview.style.display = 'block';
     video.style.display = 'none';
-    
     document.getElementById('camControls').style.display = 'none';
     document.getElementById('camRetake').style.display = 'block';
 }
@@ -417,36 +545,19 @@ function lockGPS() {
         navigator.geolocation.getCurrentPosition(pos => {
             document.getElementById('latInp').value = pos.coords.latitude;
             document.getElementById('lngInp').value = pos.coords.longitude;
-            
             let stat = document.getElementById('locStatus');
             stat.innerHTML = '✅ GPS Locked';
             stat.style.color = '#10b981';
             document.getElementById('submitDSRBtn').disabled = false;
-        }, err => {
-            let stat = document.getElementById('locStatus');
-            stat.innerHTML = '❌ Location Denied';
-            stat.style.color = '#ef4444';
-            alert("You must allow Location access to submit a Daily Sales Report.");
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
-    } else {
-        document.getElementById('locStatus').innerHTML = '❌ Unsupported Browser';
+        }, null, { enableHighAccuracy: true });
     }
-}
-
-function toggleSoldPrice() {
-    const status = document.getElementById('dealStatusSelect').value;
-    const group = document.getElementById('soldPriceGroup');
-    group.style.display = (status === 'Closed Won') ? 'block' : 'none';
 }
 
 function validateAndSubmit() {
-    if (!document.getElementById('photoB64').value) {
-        alert("You must snap a live photo of the visit!");
-        return;
-    }
-    if (!document.getElementById('latInp').value) {
-        alert("GPS Lock is required. Please wait for coordinates or check permissions.");
-        return;
+    const type = document.getElementById('activityTypeSelect').value;
+    if (type === 'Regular Visit') {
+        if (!document.getElementById('photoB64').value) return alert("Photo required for visits!");
+        if (!document.getElementById('latInp').value) return alert("GPS required for visits!");
     }
     document.getElementById('dsrForm').submit();
 }

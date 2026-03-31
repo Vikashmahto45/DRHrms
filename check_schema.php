@@ -1,6 +1,6 @@
 <?php
 require_once 'config/database.php';
-$tables = ['users', 'employee_details', 'companies', 'franchise_payments'];
+$tables = ['dsr', 'products', 'companies'];
 foreach($tables as $t) {
     echo "--- Table: $t ---\n";
     $stmt = $pdo->query("DESCRIBE $t");

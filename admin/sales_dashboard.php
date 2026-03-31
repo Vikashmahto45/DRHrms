@@ -7,20 +7,32 @@ checkAccess(['sales_person', 'staff', 'manager']); // Allow sales-oriented roles
 $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
 
-// 1. Personal Stats
-$total_assigned = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ?");
-$total_assigned->execute([$uid, $cid]);
-$total_assigned = $total_assigned->fetchColumn();
+// 1. Personal Lead Stats
+$total_assigned_stmt = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ?");
+$total_assigned_stmt->execute([$uid, $cid]);
+$total_assigned = $total_assigned_stmt->fetchColumn();
 
-$converted = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ? AND status = 'Converted'");
-$converted->execute([$uid, $cid]);
-$converted = $converted->fetchColumn();
+$converted_stmt = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ? AND status = 'Converted'");
+$converted_stmt->execute([$uid, $cid]);
+$converted = $converted_stmt->fetchColumn();
 
-$pending = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ? AND status IN ('New', 'In Progress')");
-$pending->execute([$uid, $cid]);
-$pending = $pending->fetchColumn();
+$pending_stmt = $pdo->prepare("SELECT COUNT(*) FROM leads_crm WHERE assigned_to = ? AND company_id = ? AND status IN ('New', 'In Progress')");
+$pending_stmt->execute([$uid, $cid]);
+$pending = $pending_stmt->fetchColumn();
 
 $ratio = ($total_assigned > 0) ? round(($converted / $total_assigned) * 100, 1) : 0;
+
+// 1b. Revenue Stats (from DSR Items)
+$stmt = $pdo->prepare("
+    SELECT SUM(di.custom_price) as total_rev, COUNT(DISTINCT d.id) as total_deals 
+    FROM dsr d 
+    JOIN dsr_items di ON d.id = di.dsr_id 
+    WHERE d.user_id = ? AND d.deal_status = 'Closed Won'
+");
+$stmt->execute([$uid]);
+$rev_data = $stmt->fetch();
+$total_revenue = $rev_data['total_rev'] ?? 0;
+$deals_won = $rev_data['total_deals'] ?? 0;
 
 // 2. My Recent Leads
 $my_leads = $pdo->prepare("SELECT * FROM leads_crm WHERE assigned_to = ? AND company_id = ? ORDER BY created_at DESC LIMIT 5");
@@ -111,19 +123,20 @@ $announcements = $ann_stmt->fetchAll();
         </div>
 
         <div class="stats-grid">
-            <div class="glass-card stat-card">
+            <div class="glass-card stat-card" style="border-top: 4px solid var(--primary-color);">
                 <p>Total Assigned</p>
                 <h3><?= $total_assigned ?></h3>
             </div>
-            <div class="glass-card stat-card">
-                <p>Active Prospects</p>
-                <h3><?= $pending ?></h3>
+            <div class="glass-card stat-card" style="border-top: 4px solid #10b981;">
+                <p>Total Sales (₹)</p>
+                <h3>₹<?= number_format($total_revenue / 1000, 1) ?>k</h3>
+                <small style="color:#10b981; font-weight:700;">₹<?= number_format($total_revenue, 0) ?></small>
             </div>
-            <div class="glass-card stat-card">
-                <p>Converted Leads</p>
-                <h3><?= $converted ?></h3>
+            <div class="glass-card stat-card" style="border-top: 4px solid #f59e0b;">
+                <p>Deals Won</p>
+                <h3><?= $deals_won ?></h3>
             </div>
-            <div class="glass-card stat-card">
+            <div class="glass-card stat-card" style="border-top: 4px solid #3b82f6;">
                 <p>Win Ratio</p>
                 <h3><?= $ratio ?>%</h3>
             </div>

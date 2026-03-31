@@ -162,9 +162,16 @@ if ($cid > 0) {
 
 
         <?php if ($role === 'admin'): ?>
-            <a href="<?= BASE_URL ?>admin/settings.php" class="nav-item <?= $current_page==='settings.php'?'active':'' ?>">
-                <span class="nav-icon">⚙️</span> Settings
-            </a>
+        <div class="nav-dropdown <?= in_array($current_page, ['settings.php', 'settings_products.php']) ? 'open' : '' ?>">
+            <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+                <span><span class="nav-icon">⚙️</span> Settings</span>
+                <span class="chevron">▶</span>
+            </div>
+            <div class="nav-sub-menu">
+                <a href="<?= BASE_URL ?>admin/settings_products.php" class="nav-sub-item <?= $current_page==='settings_products.php'?'active':'' ?>">Product Catalog</a>
+                <a href="<?= BASE_URL ?>admin/settings.php" class="nav-sub-item <?= $current_page==='settings.php'?'active':'' ?>">General Settings</a>
+            </div>
+        </div>
         <?php endif; ?>
         <?php if (isset($_SESSION['impersonator_id'])): ?>
             <a href="<?= BASE_URL ?>superadmin/exit_impersonation.php" class="nav-item" style="background:rgba(236,72,153,0.1);color:#ec4899;margin-top:2rem;border:1px dashed #ec4899;border-radius:8px;">
