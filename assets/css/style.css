@@ -1,15 +1,23 @@
-/* Base Variables */
+/* --- Premium DRHrms Design System --- */
 :root {
-    --bg-color: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --primary-color: #4f46e5;
-    --primary-hover: #4338ca;
-    --secondary-bg: #f8f9fa;
-    --glass-border: rgba(0, 0, 0, 0.08);
-    --gradient-start: #4f46e5;
-    --gradient-end: #06b6d4;
-    --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    /* Palette: Indigo & Deep Slate */
+    --primary-color: #6366f1; /* Electric Indigo */
+    --primary-glow: rgba(99, 102, 241, 0.5);
+    --secondary-color: #8b5cf6; /* Modern Violet */
+    --bg-main: #f8fafc; /* Softest Slate */
+    --text-main: #0f172a; /* Deep Navy */
+    --text-muted: #64748b; /* Slate 500 */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(226, 232, 240, 0.8);
+    --card-bg: #ffffff;
+    --card-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+    --card-hover: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+    
+    /* Status Colors (Curated HSL) */
+    --status-success: #10b981;
+    --status-warning: #f59e0b;
+    --status-danger: #ef4444;
+    --status-info: #0ea5e9;
 }
 
 * {
@@ -42,18 +50,25 @@ ul {
     padding: 0 2rem;
 }
 
-/* Glassmorphism */
+/* Glassmorphism Refined */
 .glass-card {
-    background: var(--secondary-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-hover);
 }
 
 /* Typography & Layout */
 .text-gradient {
-    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

@@ -140,34 +140,41 @@ $announcements = $ann_stmt->fetchAll();
         </div>
     </div>
 
-    <!-- 4-Column KPI Stats -->
-    <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:1.5rem;margin-bottom:2rem;">
-        <div class="content-card" style="margin-bottom:0;display:flex;align-items:center;gap:1rem;">
-            <div style="width:48px;height:48px;border-radius:10px;background:rgba(99,102,241,.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📈</div>
+    <!-- Dashboard Stats Grid -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.5rem; margin-bottom:2.5rem;">
+        <!-- Leads Card -->
+        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--primary-color);">
+            <div style="width:55px; height:55px; border-radius:15px; background:var(--primary-glow); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--primary-color);">📈</div>
             <div>
-                <div style="color:var(--text-muted);font-size:.85rem;">Total leads_crm</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#6366f1;"><?= number_format($total_leads) ?></div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Leads</div>
+                <div style="font-size:1.6rem; font-weight:800; color:var(--text-main);"><?= number_format($total_leads) ?></div>
             </div>
         </div>
-        <div class="content-card" style="margin-bottom:0;display:flex;align-items:center;gap:1rem;">
-            <div style="width:48px;height:48px;border-radius:10px;background:rgba(16,185,129,.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">🕐</div>
+
+        <!-- Staff Card -->
+        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--secondary-color);">
+            <div style="width:55px; height:55px; border-radius:15px; background:rgba(139, 92, 246, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--secondary-color);">👥</div>
             <div>
-                <div style="color:var(--text-muted);font-size:.85rem;">Attendance</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#10b981;"><?= $today_attendance ?></div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Staff</div>
+                <div style="font-size:1.6rem; font-weight:800; color:var(--text-main);"><?= number_format($total_staff) ?></div>
             </div>
         </div>
-        <div class="content-card" style="margin-bottom:0;display:flex;align-items:center;gap:1rem;">
-            <div style="width:48px;height:48px;border-radius:10px;background:rgba(236,72,153,.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">💰</div>
+
+        <!-- Attendance Card -->
+        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--status-success);">
+            <div style="width:55px; height:55px; border-radius:15px; background:rgba(16, 185, 129, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--status-success);">✅</div>
             <div>
-                <div style="color:var(--text-muted);font-size:.85rem;">Revenue (Est)</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#ec4899;">₹<?= number_format($total_revenue) ?></div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Present Today</div>
+                <div style="font-size:1.6rem; font-weight:800; color:var(--text-main);"><?= $today_attendance ?></div>
             </div>
         </div>
-        <div class="content-card" style="margin-bottom:0;display:flex;align-items:center;gap:1rem;">
-            <div style="width:48px;height:48px;border-radius:10px;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">📅</div>
+
+        <!-- Revenue Card -->
+        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid #ec4899;">
+            <div style="width:55px; height:55px; border-radius:15px; background:rgba(236, 72, 153, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:#ec4899;">💰</div>
             <div>
-                <div style="color:var(--text-muted);font-size:.85rem;">Daily Tasks</div>
-                <div style="font-size:1.6rem;font-weight:800;color:#f59e0b;"><?= $pending_tasks ?></div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Revenue (Est)</div>
+                <div style="font-size:1.6rem; font-weight:800; color:#ec4899;">₹<?= number_format($total_revenue) ?></div>
             </div>
         </div>
     </div>
