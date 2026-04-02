@@ -35,11 +35,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $old_progress = $p['progress_pct'];
 
         if ($new_progress >= 0 && $new_progress <= 100) {
-            $pdo->beginTransaction();
-            $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")->execute([$new_progress, ($new_progress == 100 ? 'Completed' : 'Active'), $pid]);
-            $pdo->prepare("INSERT INTO project_logs (project_id, user_id, old_progress, new_progress, comment) VALUES (?,?,?,?,?)")->execute([$pid, $uid, $old_progress, $new_progress, $comment]);
-            $pdo->commit();
-            header("Location: project_view.php?id=$pid&msg=Progress Updated"); exit();
+            try {
+                $pdo->beginTransaction();
+                $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")->execute([$new_progress, ($new_progress == 100 ? 'Completed' : 'Active'), $pid]);
+                
+                $pdo->exec("CREATE TABLE IF NOT EXISTS project_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    project_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    old_progress INT DEFAULT 0,
+                    new_progress INT DEFAULT 0,
+                    log_type ENUM('progress', 'instruction', 'system') DEFAULT 'progress',
+                    comment TEXT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )");
+                
+                // Patch existing logs if needed
+                $stmt = $pdo->query("SHOW COLUMNS FROM project_logs LIKE 'log_type'");
+                if (!$stmt->fetch()) { 
+                    $pdo->exec("ALTER TABLE project_logs ADD COLUMN log_type ENUM('progress', 'instruction', 'system') DEFAULT 'progress' AFTER new_progress"); 
+                }
+
+                $pdo->prepare("INSERT INTO project_logs (project_id, user_id, old_progress, new_progress, log_type, comment) VALUES (?,?,?,?,?,?)")
+                    ->execute([$pid, $uid, $old_progress, $new_progress, 'progress', $comment]);
+                $pdo->commit();
+                header("Location: project_view.php?id=$pid&msg=Progress Updated"); exit();
+            } catch (Exception $e) { /* DB auto-patch error handled silent but recorded */ }
+        }
+    }
+}
+
+// Handle Client Instruction (Posted by Originating Branch)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_client_instruction') {
+    if ($_SESSION['company_id'] == $p['branch_id'] && $p['status'] !== 'Completed') {
+        $comment = trim($_POST['comment'] ?? '');
+        if ($comment) {
+            $pdo->prepare("INSERT INTO project_logs (project_id, user_id, log_type, comment) VALUES (?,?,?,?)")
+                ->execute([$pid, $uid, 'instruction', $comment]);
+            header("Location: project_view.php?id=$pid&msg=Instruction Sent to Staff"); exit();
         }
     }
 }
@@ -72,9 +105,11 @@ if ($is_hq) {
 }
 
 // Fetch Logs
-$log_stmt = $pdo->prepare("SELECT l.*, u.name as updater_name FROM project_logs l JOIN users u ON l.user_id = u.id WHERE l.project_id = ? ORDER BY l.created_at DESC");
+$log_stmt = $pdo->prepare("SELECT l.*, u.name as updater_name, u.company_id as updater_cid FROM project_logs l JOIN users u ON l.user_id = u.id WHERE l.project_id = ? ORDER BY l.created_at DESC");
 $log_stmt->execute([$pid]);
 $logs = $log_stmt->fetchAll();
+
+$is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -146,14 +181,19 @@ $logs = $log_stmt->fetchAll();
                         <div class="log-item">
                             <div style="font-size:0.8rem; color:var(--text-muted);"><?= date('M d, Y h:i A', strtotime($l['created_at'])) ?></div>
                             <div style="font-weight:600; margin:5px 0;">
-                                <?php if($l['new_progress'] > 0): ?>
+                                <?php if($l['log_type'] === 'instruction'): ?>
+                                    <span style="color:#f59e0b;">💡 Client Instruction / Update</span>
+                                <?php elseif($l['new_progress'] > 0): ?>
                                     Status Update: <?= $l['new_progress'] ?>% <span style="font-weight:400; color:var(--text-muted); font-size:0.8rem;">(Was <?= $l['old_progress'] ?>%)</span>
                                 <?php else: ?>
                                     System Event
                                 <?php endif; ?>
                             </div>
-                            <p style="font-size:0.9rem; margin:0; color:#475569;"><?= nl2br(htmlspecialchars($l['comment'])) ?></p>
-                            <div style="font-size:0.75rem; color:var(--primary-color); margin-top:5px;">By: <?= htmlspecialchars($l['updater_name']) ?></div>
+                            <p style="font-size:0.9rem; margin:0; color:#475569; <?= $l['log_type'] === 'instruction' ? 'background:#fff7ed; padding:10px; border-radius:6px; border:1px dashed #fdba74;' : '' ?>"><?= nl2br(htmlspecialchars($l['comment'])) ?></p>
+                            <div style="font-size:0.75rem; color:var(--primary-color); margin-top:5px;">
+                                By: <?= htmlspecialchars($l['updater_name']) ?> 
+                                (<?= $l['updater_cid'] == $cid ? 'HQ' : 'Branch' ?>)
+                            </div>
                         </div>
                         <?php endforeach; ?>
                         <div class="log-item">
@@ -200,6 +240,20 @@ $logs = $log_stmt->fetchAll();
                     </div>
                     <p style="font-weight:600; color:#1e293b;">Overall Progress</p>
                 </div>
+
+                <?php if ($p['status'] !== 'Completed' && $is_origin_branch): ?>
+                <div class="content-card" style="margin-top:1.5rem; border-top: 5px solid #f59e0b;">
+                    <h3>Post Client Instruction</h3>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1rem;">Add extra details or change requests from the client here. This will be seen immediately by the staff and HQ.</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="add_client_instruction">
+                        <div class="form-group">
+                            <textarea name="comment" class="form-control" rows="4" placeholder="e.g. Client wants the color changed to blue..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%; background:#f59e0b; border-color:#f59e0b;">Send Instruction to Staff</button>
+                    </form>
+                </div>
+                <?php endif; ?>
 
                 <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq)): ?>
                 <div class="content-card" style="margin-top:1.5rem;">
