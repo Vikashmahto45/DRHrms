@@ -17,7 +17,7 @@ if ($cid > 0) {
 ?>
 <aside class="sidebar">
     <div class="sidebar-header">
-        <div class="logo">DR<span style="background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">Hrms</span></div>
+        <div class="logo">DR<span style="background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;">Hrms</span></div>
         <div style="font-size:.7rem; color:var(--text-muted); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Company Panel</div>
     </div>
     <nav class="nav-menu">

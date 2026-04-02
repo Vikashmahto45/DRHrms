@@ -27,7 +27,7 @@
 
 body {
     font-family: 'Inter', sans-serif;
-    background: #f1f5f9;
+    background-color: var(--bg-main, #f8fafc) !important;
     color: var(--text-main);
     display: flex;
     min-height: 100vh;
@@ -71,8 +71,10 @@ ul {
 
 .logo span {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    -webkit-background_clip: text;
+    -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block;
 }
 
 .nav-menu {
