@@ -30,7 +30,7 @@ $open_leads->execute(); $open_leads = $open_leads->fetchColumn();
 $staff = $pdo->prepare("SELECT id,name,email,role,status,created_at FROM users WHERE company_id IN ($cids_in) AND role IN ('staff','manager','sales_person') ORDER BY created_at DESC LIMIT 5");
 $staff->execute(); $staff = $staff->fetchAll();
 
-// Recent leads_crm (With Branch indicator logic if needed, but table fits strict columns)
+// Recent leads_crm
 $leads_crm = $pdo->prepare("SELECT l.*, u.name AS assigned_name, c.name as company_name FROM leads_crm l LEFT JOIN users u ON l.assigned_to=u.id LEFT JOIN companies c ON l.company_id = c.id WHERE l.company_id IN ($cids_in) ORDER BY l.created_at DESC LIMIT 5");
 $leads_crm->execute(); $leads_crm = $leads_crm->fetchAll();
 
@@ -82,7 +82,7 @@ $pending_tasks = $pending_tasks->fetchColumn();
 // Subscription Days Left
 $expiry = new DateTime($company['subscription_end_date'] ?? 'now');
 $now = new DateTime();
-$days_left = $now->diff($expiry)->format("%r%a");
+$days_left = (int)$now->diff($expiry)->format("%r%a");
 if ($days_left < 0) $days_left = 0;
 
 // Fetch Global Announcements
@@ -132,7 +132,12 @@ $announcements = $ann_stmt->fetchAll();
             <h1><?= htmlspecialchars($company['name']) ?></h1>
             <p style="color:var(--text-muted)">Welcome back, <?= htmlspecialchars($_SESSION['user_name']) ?>. Plan: <strong style="color:var(--primary-color)"><?= $company['plan_name'] ?? 'Starter' ?></strong></p>
         </div>
-        <a href="staff.php?action=new" class="btn btn-outline">+ Add Staff</a>
+        <div style="display:flex;gap:1rem;">
+            <?php if ($modules['leads_crm'] ?? 0): ?>
+                <a href="leads_crm.php?action=new" class="btn btn-primary">+ New Lead</a>
+            <?php endif; ?>
+            <a href="staff.php?action=new" class="btn btn-outline">+ Add Staff</a>
+        </div>
     </div>
 
     <!-- 4-Column KPI Stats -->
@@ -167,8 +172,8 @@ $announcements = $ann_stmt->fetchAll();
         </div>
     </div>
 
-    <!-- Subscription Banner -->
-    <?php if ($days_left <= 15): ?>
+    <!-- Subscription Banner (Only for Main Branch HQ) -->
+    <?php if ($company['is_main_branch'] == 1 && empty($company['parent_id']) && $days_left <= 15): ?>
     <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
         <div style="display: flex; align-items: center; gap: 1rem;">
             <span style="font-size: 1.5rem;">⚠️</span>
@@ -278,6 +283,7 @@ $announcements = $ann_stmt->fetchAll();
 
     </div>
 
+    </main>
 </div>
 </body>
 </html>

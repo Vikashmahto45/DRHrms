@@ -36,6 +36,7 @@ try {
  * Aggregates:
  * - A: DSR Items (On-field deals won)
  * - B: Verified Projects (Office/Large contracts)
+ * - C: Franchise Payments (Branch sales verified by HQ)
  */
 $query = "
     (
@@ -75,13 +76,31 @@ $query = "
         AND p.is_verified = 1
         AND DATE(p.created_at) BETWEEN ? AND ?
     )
+    UNION ALL
+    (
+        SELECT 
+            DATE(fp.payment_date) as sale_date,
+            fp.client_name COLLATE utf8mb4_unicode_ci as client_name,
+            COALESCE(pr.name, fp.category) COLLATE utf8mb4_unicode_ci as item_name,
+            fp.amount as amount,
+            'Branch Submission' COLLATE utf8mb4_unicode_ci as staff_name,
+            c.name COLLATE utf8mb4_unicode_ci as branch_name,
+            c.id as branch_id,
+            'Franchise Pay' COLLATE utf8mb4_unicode_ci as sale_type
+        FROM franchise_payments fp
+        JOIN companies c ON fp.company_id = c.id
+        LEFT JOIN products pr ON fp.product_id = pr.id
+        WHERE fp.company_id IN ($cids_in)
+        AND fp.status = 'approved'
+        AND DATE(fp.payment_date) BETWEEN ? AND ?
+    )
     ORDER BY sale_date DESC
 ";
 
 $sales = []; $sql_error = '';
 try {
     $stmt = $pdo->prepare($query);
-    $stmt->execute([$start_date, $end_date, $start_date, $end_date]);
+    $stmt->execute([$start_date, $end_date, $start_date, $end_date, $start_date, $end_date]);
     $sales = $stmt->fetchAll();
 } catch (Exception $e) {
     $sql_error = $e->getMessage();
@@ -91,9 +110,12 @@ try {
 $total_revenue = 0;
 $dsr_revenue = 0;
 $proj_revenue = 0;
+$fran_revenue = 0;
 foreach ($sales as $s) {
     if ($s['sale_type'] === 'DSR Deal') $dsr_revenue += $s['amount'];
-    else $proj_revenue += $s['amount'];
+    else if ($s['sale_type'] === 'Project') $proj_revenue += $s['amount'];
+    else $fran_revenue += $s['amount'];
+    
     $total_revenue += (float)$s['amount'];
 }
 ?>
@@ -102,17 +124,18 @@ foreach ($sales as $s) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unified Sales Report (Branch History) - DRHrms</title>
+    <title>Unified Sales & Revenue Report - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
     <style>
-        .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); }
-        .stat-val { font-size: 1.6rem; font-weight: 800; color: #10b981; margin-top: 5px; }
+        .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: #fff; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); }
+        .stat-val { font-size: 1.5rem; font-weight: 800; color: #10b981; margin-top: 5px; }
         .type-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; }
         .type-DSR { background: #eef2ff; color: #6366f1; border: 1px solid #c7d2fe; }
         .type-Project { background: #fdf2f8; color: #db2777; border: 1px solid #fbcfe8; }
+        .type-Franchise { background: #f0fdf4; color: #10b981; border: 1px solid #bbf7d0; }
         
         .filter-bar { background: #fff; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; display: flex; gap: 1rem; align-items: flex-end; border: 1px solid var(--glass-border); }
         @media (max-width: 768px) { .filter-bar { flex-direction: column; } }
@@ -120,14 +143,14 @@ foreach ($sales as $s) {
 </head>
 <body>
 <?php include 'includes/sidebar.php'; ?>
-<div class="main-wrapper" style="flex: 1; margin-left: 260px;">
+<div class="main-wrapper" style="flex:1; margin-left:260px;">
     <?php include 'includes/topbar.php'; ?>
-    <main class="main-content" style="margin-left: 0; width: 100%; padding: 2rem 3rem;">
+    <main class="main-content" style="margin-left:0; width:100%; padding: 2rem 3rem;">
         
         <div class="page-header">
             <div>
                 <h1>Unified Sales & Revenue Report</h1>
-                <p style="color:var(--text-muted)">Consolidated income from DSR Deals and Verified Office Projects.</p>
+                <p style="color:var(--text-muted)">Consolidated income from DSR Deals, Projects, and Franchise Payments.</p>
             </div>
             <button onclick="window.print()" class="btn btn-outline">🖨️ Print Report</button>
         </div>
@@ -136,7 +159,7 @@ foreach ($sales as $s) {
             <div class="alert alert-danger" style="margin-bottom: 2rem; background: #fee2e2; border: 1px solid #ef4444; padding: 1.5rem; border-radius: 8px; color: #b91c1c;">
                 <strong>⚠️ Database Synchronization Issue:</strong><br>
                 <?= htmlspecialchars($sql_error) ?><br><br>
-                <em>Action Required: Ensure the DSR and Projects tables are up to date.</em>
+                <em>Action Required: Ensure the DSR, Projects, and Franchise Payments tables are up to date.</em>
             </div>
         <?php endif; ?>
 
@@ -156,20 +179,20 @@ foreach ($sales as $s) {
 
         <div class="sales-stats">
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">CONSIDERED REVENUE</span>
+                <span style="color:var(--text-muted); font-size:0.8rem; font-weight:600;">TOTAL REVENUE</span>
                 <div class="stat-val">₹<?= number_format($total_revenue, 2) ?></div>
             </div>
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">PROJECT SALES</span>
+                <span style="color:var(--text-muted); font-size:0.8rem; font-weight:600;">PROJECT SALES</span>
                 <div class="stat-val" style="color:#db2777;">₹<?= number_format($proj_revenue, 2) ?></div>
             </div>
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">FIELD DEALS (DSR)</span>
-                <div class="stat-val" style="color:#6366f1;">₹<?= number_format($dsr_revenue, 2) ?></div>
+                <span style="color:var(--text-muted); font-size:0.8rem; font-weight:600;">FRANCHISE REVENUE</span>
+                <div class="stat-val" style="color:#10b981;">₹<?= number_format($fran_revenue, 2) ?></div>
             </div>
             <div class="stat-card">
-                <span style="color:var(--text-muted); font-size:0.85rem; font-weight:600;">TOTAL TRANSACTIONS</span>
-                <div class="stat-val" style="color:var(--text-main);"><?= count($sales) ?></div>
+                <span style="color:var(--text-muted); font-size:0.8rem; font-weight:600;">DSR FIELD DEALS</span>
+                <div class="stat-val" style="color:#6366f1;">₹<?= number_format($dsr_revenue, 2) ?></div>
             </div>
         </div>
 
@@ -194,7 +217,7 @@ foreach ($sales as $s) {
                         <?php foreach ($sales as $s): ?>
                         <tr>
                             <td><?= date('d M, Y', strtotime($s['sale_date'])) ?></td>
-                            <td><span class="type-badge type-<?= $s['sale_type'] === 'DSR Deal' ? 'DSR' : 'Project' ?>"><?= $s['sale_type'] ?></span></td>
+                            <td><span class="type-badge type-<?= $s['sale_type'] === 'DSR Deal' ? 'DSR' : ($s['sale_type'] === 'Project' ? 'Project' : 'Franchise') ?>"><?= $s['sale_type'] ?></span></td>
                             <td><strong><?= htmlspecialchars($s['client_name']) ?></strong></td>
                             <td style="font-size:0.9rem;"><?= htmlspecialchars($s['item_name']) ?></td>
                             <td style="font-weight:700; color:#10b981;">₹<?= number_format((float)$s['amount'], 2) ?></td>
@@ -211,7 +234,7 @@ foreach ($sales as $s) {
                         <?php if (empty($sales)): ?>
                         <tr>
                             <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
-                                No sales found for the selected date range. Ensure deals are marked as "Closed Won" or Projects are "Verified" by HQ.
+                                No sales found for the selected date range. Ensure deals are "Closed Won", Projects are "Verified", or Franchise Payments are "Approved".
                             </td>
                         </tr>
                         <?php endif; ?>

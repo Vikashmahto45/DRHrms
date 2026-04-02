@@ -126,6 +126,7 @@ $logs = $log_stmt->fetchAll();
                             <label style="font-size:0.8rem; color:var(--text-muted);">SALES PERSON</label>
                             <div style="font-weight:600;"><?= htmlspecialchars($display_salesperson) ?></div>
                         </div>
+                        <?php if ($_SESSION['user_role'] === 'admin'): ?>
                         <div>
                             <label style="font-size:0.8rem; color:var(--text-muted);">TOTAL VALUE</label>
                             <div style="font-weight:600; color:#10b981;">₹<?= number_format($p['total_value'], 2) ?></div>
@@ -134,6 +135,7 @@ $logs = $log_stmt->fetchAll();
                             <label style="font-size:0.8rem; color:var(--text-muted);">ADVANCE PAID</label>
                             <div style="font-weight:600; color:#3b82f6;">₹<?= number_format($p['advance_paid'], 2) ?></div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

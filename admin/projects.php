@@ -22,6 +22,9 @@ try {
     $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'branch_id'");
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN branch_id INT NULL AFTER company_id"); }
     
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'source'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN source VARCHAR(100) DEFAULT 'Walk-in' AFTER project_name"); }
+
     // 2. Enum Update (Status)
     $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review'");
 
@@ -68,6 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $val = (float)($_POST['total_value'] ?? 0);
             $adv = (float)($_POST['advance_paid'] ?? 0);
             $desc = trim($_POST['description'] ?? '');
+            $source = trim($_POST['source'] ?? 'Walk-in');
             $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
             $custom_sp = trim($_POST['custom_sales_name'] ?? '');
 
@@ -76,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $verified = $is_hq ? 1 : 0;
 
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $desc, $val, $adv, $status, $verified, $custom_sp]);
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $adv, $status, $verified, $custom_sp]);
                 $msg = $is_hq ? "Project created and verified." : "Project submitted. Awaiting HQ Verification."; 
                 $msgType = "success";
             }
@@ -130,6 +134,15 @@ $staff_members = $sp_stmt->fetchAll();
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
     <style>
+        .stat-card p { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+        
+        /* Source Badges */
+        .src-tag { font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; margin-top: 5px; display: inline-block; }
+        .src-Meta { background: rgba(24, 119, 242, 0.1); color: #1877f2; border: 1px solid rgba(24, 119, 242, 0.2); }
+        .src-Google { background: rgba(66, 133, 244, 0.1); color: #4285f4; border: 1px solid rgba(66, 133, 244, 0.2); }
+        .src-Referral { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .src-Walk-in { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+
         .progress-bar-container { background: #e2e8f0; border-radius: 20px; height: 10px; overflow: hidden; margin-top: 5px; }
         .progress-bar-fill { background: var(--primary-color); height: 100%; transition: width 0.3s; }
         .st-Pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
@@ -181,6 +194,10 @@ $staff_members = $sp_stmt->fetchAll();
                     <div>
                         <h3 style="margin:0; font-size:1.15rem;"><?= htmlspecialchars($p['project_name']) ?></h3>
                         <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">Client: <strong><?= htmlspecialchars($p['client_name']) ?></strong></div>
+                        <?php 
+                            $src_class = "src-" . explode(' ', $p['source'] ?? 'Walk-in')[0];
+                        ?>
+                        <span class="src-tag <?= $src_class ?>"><?= htmlspecialchars($p['source']) ?></span>
                     </div>
                     <span class="badge <?= $status_class ?>" style="font-size:0.7rem;"><?= $p['status'] ?></span>
                 </div>
@@ -234,6 +251,18 @@ $staff_members = $sp_stmt->fetchAll();
                 <label>Project Name *</label>
                 <input type="text" name="project_name" class="form-control" required placeholder="e.g. Website Development">
             </div>
+            <div class="form-group">
+                <label>Project Source</label>
+                <select name="source" class="form-control">
+                    <option value="Walk-in">🚶 Walk-in</option>
+                    <option value="Meta Ads">🔵 Meta Ads</option>
+                    <option value="Google Ads">🔴 Google Ads</option>
+                    <option value="Referral">🤝 Referral</option>
+                    <option value="Website">🌐 Website</option>
+                    <option value="Other">❓ Other</option>
+                </select>
+            </div>
+            <?php if ($role === 'admin'): ?>
             <div class="form-row">
                 <div class="form-group" style="flex:1;">
                     <label>Total Value (₹)</label>
@@ -244,6 +273,7 @@ $staff_members = $sp_stmt->fetchAll();
                     <input type="number" name="advance_paid" class="form-control" placeholder="0.00">
                 </div>
             </div>
+            <?php endif; ?>
             <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
                 <label>Assign to HQ Staff (Main Branch Only)</label>
                 <div style="display:flex; gap:10px;">
