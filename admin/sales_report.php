@@ -26,9 +26,45 @@ try {
         custom_price DECIMAL(15,2) DEFAULT 0.00,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL,
+        branch_id INT NULL,
+        sales_person_id INT NULL,
+        client_name VARCHAR(255) NOT NULL,
+        project_name VARCHAR(255) NOT NULL,
+        total_value DECIMAL(15,2) DEFAULT 0.00,
+        advance_paid DECIMAL(15,2) DEFAULT 0.00,
+        status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review',
+        progress_pct INT DEFAULT 0,
+        is_verified TINYINT(1) DEFAULT 0,
+        verified_by INT NULL,
+        custom_sales_name VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS franchise_payments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT NOT NULL,
+        amount DECIMAL(15,2) NOT NULL,
+        client_name VARCHAR(255) NOT NULL,
+        product_id INT NULL,
+        category VARCHAR(100) NOT NULL,
+        payment_date DATE NOT NULL,
+        proof_file VARCHAR(255) NOT NULL,
+        status ENUM('pending','approved','rejected') DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
     
     $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'branch_id'");
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN branch_id INT NULL AFTER company_id"); }
+
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'custom_sales_name'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN custom_sales_name VARCHAR(255) NULL AFTER verified_by"); }
+
+    $stmt = $pdo->query("SHOW COLUMNS FROM franchise_payments LIKE 'product_id'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN product_id INT NULL AFTER client_name"); }
 } catch (Exception $e) { /* Patching error handled silent */ }
 
 /** 

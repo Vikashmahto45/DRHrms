@@ -4,6 +4,7 @@
     --primary-color: #6366f1; /* Electric Indigo */
     --primary-glow: rgba(99, 102, 241, 0.5);
     --secondary-color: #8b5cf6; /* Modern Violet */
+    --gradient-end: #8b5cf6; /* Used for avatar backgrounds */
     --bg-main: #f8fafc; /* Softest Slate */
     --text-main: #0f172a; /* Deep Navy */
     --text-muted: #64748b; /* Slate 500 */
