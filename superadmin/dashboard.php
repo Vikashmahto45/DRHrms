@@ -245,7 +245,7 @@ try {
 
         <div class="header">
             <div>
-                <h1>Overview</h1>
+                <h1>Overview <span style="font-size:0.45em; background:#10b981; color:#fff; padding:3px 10px; border-radius:20px; vertical-align:middle;">✅ Deploy OK v2</span></h1>
                 <p style="color: var(--text-muted);">Welcome back to the system control panel.</p>
             </div>
         </div>
