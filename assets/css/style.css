@@ -90,7 +90,7 @@ h3 {
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
-    border: none;
+    border: 1px solid transparent;
     font-size: 0.95rem;
 }
 
