@@ -114,8 +114,8 @@ $pendings = $stmt->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Verifications - Super Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=1774440084">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=1774440084">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime(\"../assets/css/style.css\") ?>">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= filemtime(\"../assets/css/admin.css\") ?>">
     <style>
         .verify-card { display: flex; gap: 2rem; background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem; align-items: flex-start; }
         .proof-img { width: 300px; border-radius: 8px; cursor: zoom-in; border: 1px solid #eee; }
