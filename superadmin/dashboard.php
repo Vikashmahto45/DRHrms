@@ -333,148 +333,191 @@ try {
             <?php endif; ?>
         </div>
 
-        <!-- Branch Performance Overview -->
-        <div class="branch-section">
-            <div class="branch-section-title">
-                📊 Branch Performance Overview
-                <span style="font-size:0.8rem; color:#94a3b8; font-weight:400;">— Live data across all branches</span>
+        <?php
+        // Calculate Totals 
+        $sys_revenue = 0;
+        $sys_leads = 0;
+        $sys_converted = 0;
+        $sys_dsrs = 0;
+        $all_branches = array_merge(array_values($main_branches ?? []), array_values($sub_branches ?? []));
+        foreach($all_branches as $b) {
+            $sys_revenue += $b['approved_revenue'] ?? 0;
+            $sys_leads += $b['total_leads'] ?? 0;
+            $sys_converted += $b['converted_leads'] ?? 0;
+            $sys_dsrs += $b['total_dsrs'] ?? 0;
+        }
+
+        // Chart Data Prep
+        $chart_labels = [];
+        $chart_revenues = [];
+        foreach($main_branches as $mb) {
+            $br_rev = $mb['approved_revenue'] ?? 0;
+            if(!empty($mb['subs'])) {
+                 foreach($mb['subs'] as $sub) {
+                      $br_rev += $sub['approved_revenue'] ?? 0;
+                 }
+            }
+            $chart_labels[] = $mb['name'];
+            $chart_revenues[] = $br_rev;
+        }
+        ?>
+
+        <!-- 1. Global Metrics -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.5rem; margin-bottom:2.5rem;">
+            <div style="background:linear-gradient(135deg, #4f46e5, #7c3aed); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(79,70,229,0.4); position:relative; overflow:hidden;">
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">💰</div>
+                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Total Revenue</div>
+                <div style="font-size:2.2rem; font-weight:800;">₹<?= number_format($sys_revenue) ?></div>
             </div>
-
-            <?php if (empty($main_branches) && empty($sub_branches)): ?>
-                <div class="content-card" style="text-align:center; padding:3rem; color:var(--text-muted);">
-                    <div style="font-size:2.5rem; margin-bottom:1rem;">🏢</div>
-                    <p>No branches created yet. <a href="companies.php" style="color:var(--primary-color)">Create your first company →</a></p>
-                </div>
-            <?php else: ?>
-                <div class="branch-grid">
-                    <?php foreach ($main_branches as $branch): ?>
-                    <div class="branch-card">
-                        <div class="branch-card-header main">
-                            <div>
-                                <div class="branch-name"><?= htmlspecialchars($branch['name']) ?></div>
-                                <?php if ($branch['sub_branch_count'] > 0): ?>
-                                    <div style="font-size:0.75rem; color:#64748b; margin-top:2px;"><?= $branch['sub_branch_count'] ?> sub-branch<?= $branch['sub_branch_count'] > 1 ? 'es' : '' ?></div>
-                                <?php endif; ?>
-                            </div>
-                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                                <span class="branch-type-badge badge-main">Main Branch</span>
-                                <?php if ($branch['status'] !== 'active'): ?>
-                                    <span class="branch-type-badge badge-inactive"><?= ucfirst($branch['status']) ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-
-                        <div class="branch-stats">
-                            <div class="bstat">
-                                <div class="bstat-val blue"><?= number_format($branch['total_leads']) ?></div>
-                                <div class="bstat-lbl">Total Leads</div>
-                            </div>
-                            <div class="bstat">
-                                <div class="bstat-val green"><?= number_format($branch['converted_leads']) ?></div>
-                                <div class="bstat-lbl">Converted</div>
-                            </div>
-                            <div class="bstat">
-                                <div class="bstat-val purple"><?= number_format($branch['total_dsrs']) ?></div>
-                                <div class="bstat-lbl">DSR Reports</div>
-                            </div>
-                            <div class="bstat">
-                                <div class="bstat-val orange"><?= number_format($branch['today_dsrs']) ?></div>
-                                <div class="bstat-lbl">Today's Visits</div>
-                            </div>
-                        </div>
-
-                        <div class="branch-footer">
-                            <span class="revenue-chip">₹<?= number_format($branch['approved_revenue'], 0) ?> Revenue</span>
-                            <?php if ($branch['pending_payments'] > 0): ?>
-                                <span class="pending-chip"><?= $branch['pending_payments'] ?> Pending</span>
-                            <?php else: ?>
-                                <span style="font-size:0.78rem; color:#94a3b8;">No pending payments</span>
-                            <?php endif; ?>
-                            <a href="main_branch.php?action=edit&id=<?= $branch['id'] ?>" style="font-size:0.8rem; color:var(--primary-color); font-weight:600;">Manage →</a>
-                        </div>
-
-                        <!-- Sub-branches inside -->
-                        <?php if (!empty($branch['subs'])): ?>
-                        <div class="sub-branches-list">
-                            <div style="padding:0.5rem 1.4rem; font-size:0.72rem; color:#94a3b8; font-weight:600; letter-spacing:0.5px; background:#f8fafc; text-transform:uppercase;">Sub-Branches</div>
-                            <?php foreach ($branch['subs'] as $sub): ?>
-                            <div class="sub-row">
-                                <div>
-                                    <div class="sub-row-name">🏬 <?= htmlspecialchars($sub['name']) ?></div>
-                                    <?php if ($sub['status'] !== 'active'): ?>
-                                        <span class="branch-type-badge badge-inactive" style="font-size:0.65rem;"><?= ucfirst($sub['status']) ?></span>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="sub-mini-stat">
-                                    <span class="mini-chip">👥 <?= $sub['total_leads'] ?> leads</span>
-                                    <span class="mini-chip dsr">📝 <?= $sub['total_dsrs'] ?> DSR</span>
-                                    <span class="mini-chip rev">₹<?= number_format($sub['approved_revenue'], 0) ?></span>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                    <?php endforeach; ?>
-
-                    <!-- Standalone Sub-Branches (not linked to a main) -->
-                    <?php foreach ($sub_branches as $sub):
-                        if (isset($main_branches[$sub['parent_id']])) continue; // Already shown above
-                    ?>
-                    <div class="branch-card">
-                        <div class="branch-card-header sub">
-                            <div>
-                                <div class="branch-name"><?= htmlspecialchars($sub['name']) ?></div>
-                                <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">Parent: <?= htmlspecialchars($sub['parent_name'] ?? 'Unassigned') ?></div>
-                            </div>
-                            <span class="branch-type-badge badge-sub">Sub-Branch</span>
-                        </div>
-                        <div class="branch-stats">
-                            <div class="bstat"><div class="bstat-val blue"><?= $sub['total_leads'] ?></div><div class="bstat-lbl">Leads</div></div>
-                            <div class="bstat"><div class="bstat-val green"><?= $sub['converted_leads'] ?></div><div class="bstat-lbl">Converted</div></div>
-                            <div class="bstat"><div class="bstat-val purple"><?= $sub['total_dsrs'] ?></div><div class="bstat-lbl">DSRs</div></div>
-                            <div class="bstat"><div class="bstat-val orange"><?= $sub['today_dsrs'] ?></div><div class="bstat-lbl">Today</div></div>
-                        </div>
-                        <div class="branch-footer">
-                            <span class="revenue-chip">₹<?= number_format($sub['approved_revenue'], 0) ?></span>
-                            <a href="sub_branches.php?action=edit&id=<?= $sub['id'] ?>" style="font-size:0.8rem; color:var(--primary-color); font-weight:600;">Manage →</a>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div style="background:linear-gradient(135deg, #10b981, #059669); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(16,185,129,0.4); position:relative; overflow:hidden;">
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🎯</div>
+                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">System Leads</div>
+                <div style="font-size:2.2rem; font-weight:800;"><?= number_format($sys_leads) ?></div>
+            </div>
+            <div style="background:linear-gradient(135deg, #f59e0b, #d97706); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(245,158,11,0.4); position:relative; overflow:hidden;">
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">📝</div>
+                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Total DSRs</div>
+                <div style="font-size:2.2rem; font-weight:800;"><?= number_format($sys_dsrs) ?></div>
+            </div>
+            <div style="background:linear-gradient(135deg, #ec4899, #be185d); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(236,72,153,0.4); position:relative; overflow:hidden;">
+               <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🏢</div>
+                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Active Branches</div>
+                <div style="font-size:2.2rem; font-weight:800;"><?= count($all_branches) ?></div>
+            </div>
         </div>
 
-        <!-- Incoming Demo Requests -->
-        <div class="content-card" style="margin-bottom: 2.5rem; border-color: rgba(236,72,153,0.3);">
-            <div class="card-header">
-                <h2>Incoming Concierge Requests</h2>
-                <a href="concierge_requests.php" style="color: #ec4899; font-size: 0.9rem;">View All →</a>
+        <!-- 2. Charts Section -->
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:2rem; margin-bottom:2.5rem;">
+            <div class="content-card" style="margin-bottom:0;">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>Revenue by Main Branch</h2>
+                </div>
+                <div style="position: relative; height:300px; width:100%;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
-            <div style="overflow-x: auto;">
-                <table class="table">
-                    <thead><tr><th>Name</th><th>Company/Agency</th><th>Contact Info</th><th>Date</th><th>Action</th></tr></thead>
+            <div class="content-card" style="margin-bottom:0;">
+                <div class="card-header" style="margin-bottom:1rem;">
+                    <h2>Lead Conversion Rate</h2>
+                </div>
+                <div style="position: relative; height:300px; width:100%; display:flex; align-items:center; justify-content:center;">
+                    <canvas id="leadsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Master Data Table -->
+        <div class="content-card">
+            <div class="card-header">
+                <h2>Complete Branch Matrix</h2>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Branch Name</th>
+                            <th>Type</th>
+                            <th>Total Leads</th>
+                            <th>Converted</th>
+                            <th>DSRs Today/Total</th>
+                            <th>Approved Revenue</th>
+                        </tr>
+                    </thead>
                     <tbody>
-                        <?php if (count($recent_demo_requests) > 0): ?>
-                            <?php foreach ($recent_demo_requests as $request): ?>
-                                <tr>
-                                    <td style="font-weight:600;"><?php echo htmlspecialchars($request['name']); ?></td>
-                                    <td><?php echo htmlspecialchars($request['company_name']); ?></td>
-                                    <td>
-                                        <div><?php echo htmlspecialchars($request['email']); ?></div>
-                                        <div style="color:var(--text-muted);font-size:0.85rem;"><?php echo htmlspecialchars($request['phone']); ?></div>
-                                    </td>
-                                    <td style="color:var(--text-muted);font-size:0.9rem;"><?php echo date('M d, Y', strtotime($request['created_at'])); ?></td>
-                                    <td><a href="process_demo.php?id=<?php echo $request['id']; ?>" class="btn btn-outline" style="color:#ec4899;border-color:#ec4899;font-size:0.8rem;padding:0.4rem 0.8rem;">Process Setup</a></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem;">No pending demo requests.</td></tr>
+                        <?php if(empty($all_branches)): ?>
+                            <tr><td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">No active branches found.</td></tr>
                         <?php endif; ?>
+                        
+                        <?php foreach($all_branches as $b): ?>
+                        <tr>
+                            <td style="font-weight:600; color:var(--text-main);">
+                                <?= htmlspecialchars($b['name']) ?>
+                                <?php if(isset($b['parent_id'])): ?>
+                                     <div style="font-size:0.75rem; color:var(--text-muted); margin-top:3px;">Parent: <?= htmlspecialchars($b['parent_name'] ?? 'Unknown') ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if(isset($b['sub_branch_count'])): ?>
+                                    <span style="background:rgba(99,102,241,0.1); color:#4f46e5; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">MAIN</span>
+                                <?php else: ?>
+                                    <span style="background:rgba(148,163,184,0.1); color:#64748b; padding:4px 10px; border-radius:20px; font-size:0.75rem; font-weight:700;">SUB</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= $b['total_leads'] ?? 0 ?></td>
+                            <td><?= $b['converted_leads'] ?? 0 ?></td>
+                            <td><span style="color:#f59e0b; font-weight:600;"><?= $b['today_dsrs'] ?? 0 ?></span> <span style="color:var(--text-muted);">/ <?= $b['total_dsrs'] ?? 0 ?></span></td>
+                            <td style="font-weight:700; color:#10b981;">₹<?= number_format($b['approved_revenue'] ?? 0) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Revenue Chart
+            const revCtx = document.getElementById('revenueChart');
+            if (revCtx) {
+                new Chart(revCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: <?= json_encode($chart_labels) ?>,
+                        datasets: [{
+                            label: 'Total Revenue (₹)',
+                            data: <?= json_encode($chart_revenues) ?>,
+                            backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                            hoverBackgroundColor: 'rgba(79, 70, 229, 1)',
+                            borderRadius: 6,
+                            barThickness: 40
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.05)', borderDash: [5, 5] }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Leads Chart
+            const leadsCtx = document.getElementById('leadsChart');
+            if (leadsCtx) {
+                new Chart(leadsCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Converted', 'In Progress / Lost'],
+                        datasets: [{
+                            data: [<?= $sys_converted ?>, <?= max(0, $sys_leads - $sys_converted) ?>],
+                            backgroundColor: ['#10b981', '#cbd5e1'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        });
+        </script>
 
     </main>
 </body>
