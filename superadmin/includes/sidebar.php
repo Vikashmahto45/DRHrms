@@ -51,7 +51,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div style="font-size:0.8rem;color:var(--text-muted);">Super Admin</div>
             </div>
         </div>
-        <a href="../logout.php?role=sa" class="btn btn-outline" style="width:100%; text-align:center; font-size:0.85rem; padding:0.6rem 0.5rem; border: 1px solid var(--primary-color) !important; border-radius: 30px !important; color: var(--primary-color) !important; text-decoration: none;">Logout</a>
+        <a href="../logout.php?role=sa" class="btn btn-outline" style="width:100%; text-align:center; font-size:0.85rem; padding:0.6rem 0.5rem; border: 1px solid var(--primary-color) !important; border-radius: 30px !important; text-decoration: none;">Logout</a>
     </div>
 </aside>
 <script>
