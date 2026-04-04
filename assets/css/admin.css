@@ -266,7 +266,7 @@ ul {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none;
+    border: 1px solid transparent;
     font-size: 0.95rem;
     gap: 8px;
 }
@@ -281,6 +281,18 @@ ul {
     background: var(--secondary-color);
     transform: translateY(-2px);
     box-shadow: 0 8px 20px -4px var(--primary-glow);
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 30px;
+}
+
+.btn-outline:hover {
+    background: var(--primary-color);
+    color: #fff;
 }
 
 .table {
