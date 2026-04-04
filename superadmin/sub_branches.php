@@ -25,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         $is_main_branch = 0;
         $parent_id = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
-        $commission_rate = !empty($_POST['commission_rate']) ? (float)$_POST['commission_rate'] : 80.00;
 
         $expiry = null; // Removed SaaS expiry
 
@@ -36,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $pdo->beginTransaction();
                     $login_slug = strtolower(substr(md5(uniqid($name, true)), 0, 10));
-                    $stmt = $pdo->prepare("INSERT INTO companies (name, status, subscription_end_date, user_limit, lead_limit, storage_limit_mb, is_main_branch, parent_id, commission_rate, login_slug) VALUES (?,?,?,?,?,?,?,?,?,?)");
-                    $stmt->execute([$name, $status, $expiry, $user_limit, $lead_limit, $storage_mb, $is_main_branch, $parent_id, $commission_rate, $login_slug]);
+                    $stmt = $pdo->prepare("INSERT INTO companies (name, status, subscription_end_date, user_limit, lead_limit, storage_limit_mb, is_main_branch, parent_id, login_slug) VALUES (?,?,?,?,?,?,?,?,?)");
+                    $stmt->execute([$name, $status, $expiry, $user_limit, $lead_limit, $storage_mb, $is_main_branch, $parent_id, $login_slug]);
                     $company_id = $pdo->lastInsertId();
 
                     $hash = password_hash($admin_pass, PASSWORD_DEFAULT);
@@ -300,10 +299,6 @@ unset($_SESSION['flash_message']);
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group" id="commissionGroup">
-                    <label>Commission Rate (%)</label>
-                    <input type="number" step="0.01" name="commission_rate" class="form-control" value="80.00">
-                </div>
             </div>
 
 
@@ -328,7 +323,6 @@ unset($_SESSION['flash_message']);
 function toggleBranchFields() {
     const isMain = document.getElementById('branchType').value === '1';
     document.getElementById('parentBranchGroup').style.display = isMain ? 'none' : 'block';
-    document.getElementById('commissionGroup').style.display = isMain ? 'none' : 'block';
 }
 
 function togglePass() {

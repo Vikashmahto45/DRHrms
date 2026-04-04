@@ -4,11 +4,13 @@ require_once '../includes/auth.php';
 require_once '../config/database.php';
 checkAccess('super_admin');
 
-// Fetch all branches with their sales and commission rates
+// Fetch all branches with their sales and actual commission splits
 $stmt = $pdo->query("
     SELECT 
-        c.id, c.name, c.is_main_branch, c.commission_rate, c.status,
+        c.id, c.name, c.is_main_branch, c.status,
         (SELECT COALESCE(SUM(amount), 0) FROM franchise_payments WHERE company_id = c.id AND status = 'approved') as total_gross_sales,
+        (SELECT COALESCE(SUM(admin_cut), 0) FROM franchise_payments WHERE company_id = c.id AND status = 'approved') as hq_cut,
+        (SELECT COALESCE(SUM(franchise_share), 0) FROM franchise_payments WHERE company_id = c.id AND status = 'approved') as branch_cut,
         (SELECT COUNT(*) FROM franchise_payments WHERE company_id = c.id AND status = 'approved') as total_transactions
     FROM companies c
     WHERE c.is_main_branch = 0
@@ -20,12 +22,8 @@ $system_gross = 0;
 $system_hq_cut = 0;
 
 foreach ($branches as $b) {
-    // commission_rate is typically what the franchise KEEPS (e.g. 80%)
-    // so HQ gets (100 - commission_rate) %
-    $hq_percent = 100 - (float)$b['commission_rate'];
-    
     $system_gross += $b['total_gross_sales'];
-    $system_hq_cut += ($b['total_gross_sales'] * ($hq_percent / 100));
+    $system_hq_cut += $b['hq_cut'];
 }
 
 ?>
@@ -99,12 +97,13 @@ foreach ($branches as $b) {
                 </thead>
                 <tbody>
                     <?php foreach ($branches as $b): 
-                        $branch_pct = (float)$b['commission_rate'];
-                        $hq_pct = 100 - $branch_pct;
-                        
                         $gross = (float)$b['total_gross_sales'];
-                        $branch_cut = $gross * ($branch_pct / 100);
-                        $hq_cut = $gross * ($hq_pct / 100);
+                        $branch_cut = (float)$b['branch_cut'];
+                        $hq_cut = (float)$b['hq_cut'];
+                        
+                        // Calculate average percentages for display purposes only
+                        $avg_branch_pct = $gross > 0 ? round(($branch_cut / $gross) * 100, 1) : 0;
+                        $avg_hq_pct = $gross > 0 ? round(($hq_cut / $gross) * 100, 1) : 0;
                     ?>
                     <tr>
                         <td>
@@ -118,8 +117,8 @@ foreach ($branches as $b) {
                         <td style="font-weight: 600; color: #64748b;"><?= $b['total_transactions'] ?></td>
                         <td>
                             <div style="display:inline-flex; align-items:center; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; font-size:0.8rem; font-weight:700;">
-                                <span style="padding:4px 8px; background:#f1f5f9; color:#475569; border-right:1px solid #e2e8f0;" title="Branch retains <?= $branch_pct ?>%"><?= $branch_pct ?>%</span>
-                                <span style="padding:4px 8px; background:#ecfdf5; color:#059669;" title="HQ takes <?= $hq_pct ?>%"><?= $hq_pct ?>%</span>
+                                <span style="padding:4px 8px; background:#f1f5f9; color:#475569; border-right:1px solid #e2e8f0;" title="Avg Branch retains <?= $avg_branch_pct ?>%">~<?= $avg_branch_pct ?>%</span>
+                                <span style="padding:4px 8px; background:#ecfdf5; color:#059669;" title="Avg HQ takes <?= $avg_hq_pct ?>%">~<?= $avg_hq_pct ?>%</span>
                             </div>
                         </td>
                         <td style="font-weight: 700; color: #3b82f6;">₹<?= number_format($gross, 2) ?></td>

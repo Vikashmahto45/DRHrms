@@ -25,6 +25,9 @@ try {
     $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'source'");
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN source VARCHAR(100) DEFAULT 'Walk-in' AFTER project_name"); }
 
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'commission_percent'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN commission_percent DECIMAL(5,2) DEFAULT NULL AFTER total_value"); }
+
     // 2. Enum Update (Status)
     $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review'");
 
@@ -39,6 +42,7 @@ try {
         project_name VARCHAR(255) NOT NULL,
         project_description TEXT NULL,
         total_value DECIMAL(15,2) DEFAULT 0.00,
+        commission_percent DECIMAL(5,2) DEFAULT NULL,
         advance_paid DECIMAL(15,2) DEFAULT 0.00,
         status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review',
         progress_pct INT DEFAULT 0,
@@ -74,14 +78,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $source = trim($_POST['source'] ?? 'Walk-in');
             $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
             $custom_sp = trim($_POST['custom_sales_name'] ?? '');
+            $comm_pct = isset($_POST['commission_percent']) && $_POST['commission_percent'] !== '' ? (float)$_POST['commission_percent'] : null;
 
             // Rule: Sub-branch entries are 'Pending HQ Review'
             $status = $is_hq ? 'Active' : 'Pending HQ Review';
             $verified = $is_hq ? 1 : 0;
 
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $adv, $status, $verified, $custom_sp]);
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp]);
                 $msg = $is_hq ? "Project created and verified." : "Project submitted. Awaiting HQ Verification."; 
                 $msgType = "success";
             }
@@ -274,6 +279,10 @@ $staff_members = $sp_stmt->fetchAll();
                 </div>
             </div>
             <?php endif; ?>
+            <div class="form-group">
+                <label>Commission Percentage (%) *</label>
+                <input type="number" step="0.01" name="commission_percent" class="form-control" placeholder="e.g. 15.00" required>
+            </div>
             <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
                 <label>Assign to HQ Staff (Main Branch Only)</label>
                 <div style="display:flex; gap:10px;">

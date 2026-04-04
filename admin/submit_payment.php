@@ -7,54 +7,90 @@ checkAccess('admin');
 $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
-// Auto-patch for product tracking in payments
+// Auto-patch for franchise_payments table
 try {
+    $stmt = $pdo->query("SHOW COLUMNS FROM franchise_payments LIKE 'project_id'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN project_id INT NULL AFTER company_id"); }
+    
+    $stmt = $pdo->query("SHOW COLUMNS FROM franchise_payments LIKE 'commission_percent'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN commission_percent DECIMAL(5,2) NULL AFTER project_id"); }
+    
     $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN IF NOT EXISTS product_id INT NULL DEFAULT NULL AFTER client_name");
-} catch (Exception $e) {
-    try { $pdo->exec("ALTER TABLE franchise_payments ADD COLUMN product_id INT NULL DEFAULT NULL AFTER client_name"); } catch(Exception $ex){}
-}
+} catch (Exception $e) {}
 
 // Fetch products for dropdown
 $stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
 $stmt->execute([$cid]);
 $products = $stmt->fetchAll();
 
+// Fetch active projects for dropdown
+$stmt = $pdo->prepare("SELECT id, client_name, project_name, commission_percent FROM projects WHERE branch_id = ? ORDER BY created_at DESC");
+$stmt->execute([$cid]);
+$branch_projects = $stmt->fetchAll();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $amount = (float)$_POST['amount'];
-    $client = trim($_POST['client_name']);
-    $product_id = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
-    $date = $_POST['payment_date'];
-    $category = $_POST['category'];
+    $category = $_POST['category'] ?? '';
+    $date = $_POST['payment_date'] ?? date('Y-m-d');
     $proof = $_FILES['proof_file'] ?? null;
+    $product_id = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
 
-    if ($amount > 0 && $client && $proof && $proof['error'] === 0) {
-        $ext = pathinfo($proof['name'], PATHINFO_EXTENSION);
-        $filename = "pay_" . time() . "_" . $cid . "." . $ext;
-        $uploadDir = "../assets/uploads/payments/";
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
-        $target = $uploadDir . $filename;
+    $project_id = $_POST['project_id'] ?? '';
+    $client = '';
+    $commission = null;
 
-        if (move_uploaded_file($proof['tmp_name'], $target)) {
-            try {
-                $stmt = $pdo->prepare("INSERT INTO franchise_payments (company_id, amount, client_name, product_id, category, payment_date, proof_file, status) VALUES (?,?,?,?,?,?,?, 'pending')");
-                $stmt->execute([$cid, $amount, $client, $product_id, $category, $date, $filename]);
+    try {
+        $pdo->beginTransaction();
+
+        if ($project_id === 'NEW') {
+            $client = trim($_POST['new_client_name'] ?? '');
+            $pname = trim($_POST['new_project_name'] ?? '');
+            $commission = isset($_POST['commission_percent']) ? (float)$_POST['commission_percent'] : null;
+            
+            // Create Project
+            $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, client_name, project_name, commission_percent, status) VALUES (?, ?, ?, ?, ?, 'Pending HQ Review')");
+            $stmt->execute([$cid, $cid, $client, $pname, $commission]);
+            $project_id = $pdo->lastInsertId();
+        } else {
+            $project_id = (int)$project_id;
+            // Fetch client name & commision from existing project
+            $stmt = $pdo->prepare("SELECT client_name, commission_percent FROM projects WHERE id = ?");
+            $stmt->execute([$project_id]);
+            $proj = $stmt->fetch();
+            if ($proj) {
+                $client = $proj['client_name'];
+                $commission = $proj['commission_percent'];
+            }
+        }
+
+        if ($amount > 0 && $client && $proof && $proof['error'] === 0) {
+            $ext = pathinfo($proof['name'], PATHINFO_EXTENSION);
+            $filename = "pay_" . time() . "_" . $cid . "." . $ext;
+            $uploadDir = "../assets/uploads/payments/";
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+            $target = $uploadDir . $filename;
+
+            if (move_uploaded_file($proof['tmp_name'], $target)) {
+                $stmt = $pdo->prepare("INSERT INTO franchise_payments (company_id, project_id, commission_percent, amount, client_name, product_id, category, payment_date, proof_file, status) VALUES (?,?,?,?,?,?,?,?,?,'pending')");
+                $stmt->execute([$cid, $project_id, $commission, $amount, $client, $product_id, $category, $date, $filename]);
                 
-                logActivity('payment_submitted', "Submitted payment: $amount for $client", $cid);
-                $msg = "Payment submitted successfully! Waiting for verification.";
+                logActivity('payment_submitted', "Submitted payment: ₹$amount for $client", $cid);
+                $msg = "Payment & Project Linked Successfully! Waiting for HQ verification.";
                 $msgType = "success";
-            } catch (Exception $e) {
-                $msg = "Database error: " . $e->getMessage();
+                $pdo->commit();
+            } else {
+                $pdo->rollBack();
+                $msg = "Failed to upload proof image. Please check file permissions.";
                 $msgType = "error";
             }
         } else {
-            $error_detail = "Check directory permissions (0755/0777). Path: " . $uploadDir;
-            if (!is_writable($uploadDir)) $error_detail = "Directory $uploadDir is NOT writable.";
-            if (!file_exists($uploadDir)) $error_detail = "Directory $uploadDir does not exist.";
-            $msg = "Failed to upload proof. " . $error_detail;
+            $pdo->rollBack();
+            $msg = "Please fill all fields and upload a valid proof screenshot.";
             $msgType = "error";
         }
-    } else {
-        $msg = "Please fill all fields and upload a valid proof screenshot.";
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        $msg = "Database error: " . $e->getMessage();
         $msgType = "error";
     }
 }
@@ -127,9 +163,37 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                     <input type="number" step="0.01" name="amount" class="form-control" required placeholder="1000.00">
                 </div>
                 <div class="form-group">
-                    <label>Client Name *</label>
-                    <input type="text" name="client_name" class="form-control" required placeholder="John Smith">
+                    <label>Select Project / Client *</label>
+                    <select name="project_id" id="projectSelector" class="form-control" required onchange="toggleNewProjectFields()">
+                        <option value="">-- Select an Existing Project --</option>
+                        <?php foreach($branch_projects as $p): ?>
+                            <option value="<?= $p['id'] ?>">
+                                <?= htmlspecialchars($p['client_name']) ?> - <?= htmlspecialchars($p['project_name']) ?> (Comm: <?= $p['commission_percent'] !== null ? $p['commission_percent'].'%' : 'Not Set' ?>)
+                            </option>
+                        <?php endforeach; ?>
+                        <option value="NEW" style="font-weight:bold; color:var(--primary-color);">➕ CREATE NEW PROJECT...</option>
+                    </select>
                 </div>
+
+                <!-- Hidden Fields for New Project -->
+                <div id="newProjectFields" style="display:none; background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed #cbd5e1; margin-bottom:1.5rem;">
+                    <h5 style="margin-top:0; font-size:0.9rem; color:var(--text-main);">New Project Details</h5>
+                    <div class="form-group">
+                        <label>Client Name *</label>
+                        <input type="text" name="new_client_name" id="new_client_name" class="form-control" placeholder="John Smith">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Project Name *</label>
+                            <input type="text" name="new_project_name" id="new_project_name" class="form-control" placeholder="e.g. Website Dev">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label>Commission Percentage (%) *</label>
+                            <input type="number" step="0.01" name="commission_percent" id="commission_percent" class="form-control" placeholder="e.g. 15.00">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                         <label style="margin-bottom:0;">Related Product/Service</label>
@@ -196,5 +260,41 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
         </div>
     </div>
 </main>
+<script>
+    // Image Preview
+    document.getElementById('proofInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('previewImg');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Toggle New Project Fields
+    function toggleNewProjectFields() {
+        const sel = document.getElementById('projectSelector').value;
+        const panel = document.getElementById('newProjectFields');
+        const cName = document.getElementById('new_client_name');
+        const pName = document.getElementById('new_project_name');
+        const comm = document.getElementById('commission_percent');
+
+        if (sel === 'NEW') {
+            panel.style.display = 'block';
+            cName.required = true;
+            pName.required = true;
+            comm.required = true;
+        } else {
+            panel.style.display = 'none';
+            cName.required = false;
+            pName.required = false;
+            comm.required = false;
+        }
+    }
+</script>
 </body>
 </html>

@@ -21,12 +21,6 @@ if ($role === 'super_admin') {
     }
 }
 
-// 0. Auto-patch for Commission Column
-try {
-    $pdo->exec("ALTER TABLE companies ADD COLUMN IF NOT EXISTS commission_percentage DECIMAL(5,2) DEFAULT 20.00 AFTER is_main_branch");
-} catch (Exception $e) {
-    try { $pdo->exec("ALTER TABLE companies ADD COLUMN commission_percentage DECIMAL(5,2) DEFAULT 20.00 AFTER is_main_branch"); } catch(Exception $ex){}
-}
 
 $msg = ''; $msgType = '';
 
@@ -40,18 +34,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            // 1. Get Payment & Company Commission
-            $stmt = $pdo->prepare("
-                SELECT p.*, c.commission_percentage 
-                FROM franchise_payments p 
-                JOIN companies c ON p.company_id = c.id 
-                WHERE p.id = ?
-            ");
+            // 1. Get Payment & Project Commission
+            $stmt = $pdo->prepare("SELECT * FROM franchise_payments WHERE id = ?");
             $stmt->execute([$pid]);
             $pay = $stmt->fetch();
 
             if ($pay && $pay['status'] === 'pending') {
-                $commission = $pay['commission_percentage'] ?: 20.00;
+                $commission = $pay['commission_percent'] !== null ? (float)$pay['commission_percent'] : 0.00;
+                
+                // commission variable is what HQ GETS or what FRANCHISE GETS?
+                // Wait. Originally: $admin_cut = $pay['amount'] * ($commission / 100); -> so $commission is the ADMIN CUT %.
+                // But the user usually inputs "Branch Commission 15%". 
+                // Let's assume the input is "HQ Cut %" originally. 
+                // Let's review: $admin_cut = $pay['amount'] * ($commission / 100); 
+                // $franchise_share = $pay['amount'] - $admin_cut;
+                
                 $admin_cut = $pay['amount'] * ($commission / 100);
                 $franchise_share = $pay['amount'] - $admin_cut;
 
@@ -86,10 +83,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch Pending Payments based on Role
 if ($role === 'super_admin') {
     $stmt = $pdo->prepare("
-        SELECT p.*, c.name as company_name, pr.name as product_name 
+        SELECT p.*, c.name as company_name, pr.name as product_name, proj.project_name
         FROM franchise_payments p 
         JOIN companies c ON p.company_id = c.id 
         LEFT JOIN products pr ON p.product_id = pr.id
+        LEFT JOIN projects proj ON p.project_id = proj.id
         WHERE p.status = 'pending' 
         ORDER BY p.created_at DESC
     ");
@@ -97,10 +95,11 @@ if ($role === 'super_admin') {
 } else {
     // Main Admin: Act as Global Admin - see ALL pending sub-branch payments
     $stmt = $pdo->query("
-        SELECT p.*, c.name as company_name, pr.name as product_name 
+        SELECT p.*, c.name as company_name, pr.name as product_name, proj.project_name
         FROM franchise_payments p 
         JOIN companies c ON p.company_id = c.id 
         LEFT JOIN products pr ON p.product_id = pr.id
+        LEFT JOIN projects proj ON p.project_id = proj.id
         WHERE p.status = 'pending' AND c.is_main_branch = 0
         ORDER BY p.created_at DESC
     ");
@@ -167,8 +166,11 @@ if ($role === 'super_admin') {
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div>
-                    <label style="font-size:0.8rem; color:var(--text-muted)">Client</label>
+                    <label style="font-size:0.8rem; color:var(--text-muted)">Client & Project</label>
                     <div style="font-weight:600;"><?= htmlspecialchars($p['client_name']) ?></div>
+                    <?php if ($p['project_name']): ?>
+                        <div style="font-size:0.85rem; color:var(--primary-color);">↳ <?= htmlspecialchars($p['project_name']) ?></div>
+                    <?php endif; ?>
                 </div>
                 <div>
                     <label style="font-size:0.8rem; color:var(--text-muted)">Amount</label>
@@ -182,9 +184,13 @@ if ($role === 'super_admin') {
                     <label style="font-size:0.8rem; color:var(--text-muted)">Payment Date</label>
                     <div><?= date('M d, Y', strtotime($p['payment_date'])) ?></div>
                 </div>
-                <div style="grid-column: span 2;">
+                <div>
                     <label style="font-size:0.8rem; color:var(--text-muted)">Associated Product</label>
                     <div style="font-weight:600; color:#6366f1;"><?= htmlspecialchars($p['product_name'] ?? 'General/Other') ?></div>
+                </div>
+                <div style="background:#fef2f2; padding:10px; border-radius:6px; border:1px solid #fee2e2;">
+                    <label style="font-size:0.8rem; color:#ef4444; font-weight:700;">REQUESTED SPLIT / COMMISSION</label>
+                    <div style="font-weight:800; color:#b91c1c; font-size:1.1rem;"><?= $p['commission_percent'] !== null ? $p['commission_percent'].'%' : 'Not Set (Defaults 0%)' ?></div>
                 </div>
             </div>
 
