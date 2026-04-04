@@ -8,8 +8,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <aside class="sidebar">
     <div class="sidebar-header">
-        <div class="logo">DR<span>Hrms</span></div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">SUPER ADMIN PORTAL</div>
+        <div class="logo">DR<span style="background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; display:inline-block;">Hrms</span></div>
+        <div style="font-size:.7rem; color:var(--text-muted); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Super Admin Portal</div>
     </div>
     <nav class="nav-menu">
         <a href="dashboard.php" class="nav-item <?= $current_page === 'dashboard.php' ? 'active' : '' ?>">
