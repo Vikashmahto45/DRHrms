@@ -35,8 +35,8 @@ $top_performers = array_slice($rankings, 0, 3);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Performance - Super Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime(\"../assets/css/style.css\") ?>">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= filemtime(\"../assets/css/admin.css\") ?>">
+    <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime('../assets/css/style.css') ?>">
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= filemtime('../assets/css/admin.css') ?>">
     <style>
         .leaderboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
         .performance-card { background: #fff; padding: 1.5rem; border-radius: 16px; border: 1px solid var(--glass-border); position: relative; overflow: hidden; }
