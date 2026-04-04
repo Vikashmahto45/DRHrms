@@ -45,13 +45,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </nav>
     <div class="sidebar-footer">
         <div class="user-info">
-            <div class="avatar">SA</div>
+            <div class="avatar" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important; color: #fff !important; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">SA</div>
             <div>
-                <div style="font-size:0.9rem;font-weight:600;"><?= htmlspecialchars($_SESSION['sa_user_name']) ?></div>
+                <div style="font-size:0.9rem;font-weight:600;"><?= htmlspecialchars($_SESSION['sa_user_name'] ?? 'Admin') ?></div>
                 <div style="font-size:0.8rem;color:var(--text-muted);">Super Admin</div>
             </div>
         </div>
-        <a href="../logout.php?role=sa" class="btn btn-outline" style="width:100%;text-align:center;font-size:0.85rem;padding:0.5rem;">Logout</a>
+        <a href="../logout.php?role=sa" class="btn btn-outline" style="width:100%; text-align:center; font-size:0.85rem; padding:0.6rem 0.5rem; border: 1px solid var(--primary-color) !important; border-radius: 30px !important; color: var(--primary-color) !important; text-decoration: none;">Logout</a>
     </div>
 </aside>
 <script>
