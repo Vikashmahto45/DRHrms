@@ -10,6 +10,16 @@ $msgType = '';
 // ── Handle POST actions ─────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
+    
+    function slugify($text) {
+        $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+        $text = preg_replace('~[^-\w]+~', '', $text);
+        $text = trim($text, '-');
+        $text = preg_replace('~-+~', '-', $text);
+        $text = strtolower($text);
+        return empty($text) ? 'n-a' : $text;
+    }
 
     if ($action === 'create') {
         $name        = trim($_POST['name'] ?? '');
@@ -32,9 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strlen($admin_pass) < 6) {
                 $msg = "Password must be at least 6 characters."; $msgType = 'error';
             } else {
-                try {
-                    $pdo->beginTransaction();
-                    $login_slug = strtolower(substr(md5(uniqid($name, true)), 0, 10));
+                    try {
+                        $pdo->beginTransaction();
+                        // Name-based slug with a bit of randomness for uniqueness
+                        $slug_base = slugify($name);
+                        $login_slug = $slug_base . '-' . substr(md5(uniqid($name, true)), 0, 4);
                     $stmt = $pdo->prepare("INSERT INTO companies (name, status, subscription_end_date, user_limit, lead_limit, storage_limit_mb, is_main_branch, parent_id, login_slug) VALUES (?,?,?,?,?,?,?,?,?)");
                     $stmt->execute([$name, $status, $expiry, $user_limit, $lead_limit, $storage_mb, $is_main_branch, $parent_id, $login_slug]);
                     $company_id = $pdo->lastInsertId();
@@ -77,6 +89,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_role'] = 'admin';
             $_SESSION['user_name'] = $admin['name'] . " (Impersonated)";
             header("Location: ../admin/dashboard.php"); exit();
+        }
+    }
+
+    if ($action === 'update') {
+        $id          = (int)$_POST['company_id'];
+        $name        = trim($_POST['name'] ?? '');
+        $slug        = trim($_POST['login_slug'] ?? '');
+        $user_limit  = (int)($_POST['user_limit'] ?? 10);
+        $lead_limit  = (int)($_POST['lead_limit'] ?? 100);
+        $storage_mb  = (int)($_POST['storage_limit'] ?? 500);
+        $status      = $_POST['status'] ?? 'active';
+        $parent_id   = !empty($_POST['parent_id']) ? (int)$_POST['parent_id'] : null;
+        $sel_modules = $_POST['modules'] ?? [];
+
+        if ($name && $slug) {
+            try {
+                $pdo->beginTransaction();
+                
+                // Update company basics
+                $stmt = $pdo->prepare("UPDATE companies SET name=?, login_slug=?, user_limit=?, lead_limit=?, storage_limit_mb=?, status=?, parent_id=? WHERE id=?");
+                $stmt->execute([$name, $slug, $user_limit, $lead_limit, $storage_mb, $status, $parent_id, $id]);
+
+                // Sync modules
+                // 1. Reset
+                $pdo->prepare("DELETE FROM permissions_map WHERE company_id=?")->execute([$id]);
+                // 2. Add
+                foreach ($sel_modules as $mod) {
+                    $pdo->prepare("INSERT INTO permissions_map (company_id,module_name,is_enabled) VALUES (?,?,1)")->execute([$id, $mod]);
+                }
+
+                $pdo->commit();
+                logActivity('company_updated', "Updated branch details: $name", $id);
+                $_SESSION['flash_message'] = "Settings for '<strong>{$name}</strong>' updated.";
+                header("Location: sub_branches.php"); exit();
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $msg = "Error: " . $e->getMessage(); $msgType = 'error';
+            }
         }
     }
 
@@ -226,6 +276,11 @@ unset($_SESSION['flash_message']);
                                 <input type="hidden" name="company_id" value="<?= $c['id'] ?>">
                                 <button type="submit" class="btn btn-sm btn-primary" style="padding:0.3rem 0.6rem">Login As</button>
                             </form>
+                            
+                            <button type="button" class="btn btn-sm btn-outline" 
+                                onclick='showEditModal(<?= json_encode($c) ?>, <?= json_encode($perms) ?>)'
+                                style="padding:0.3rem 0.6rem">Edit</button>
+
                             <form method="POST" style="display:inline">
                                 <input type="hidden" name="action" value="toggle_status">
                                 <input type="hidden" name="company_id" value="<?= $c['id'] ?>">
@@ -319,7 +374,102 @@ unset($_SESSION['flash_message']);
     </div>
 </div>
 
+<!-- Edit Company Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box" style="max-width:650px;">
+        <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('open')">&times;</button>
+        <h3>Edit Sub-Branch</h3>
+        <form method="POST">
+            <input type="hidden" name="action" value="update">
+            <input type="hidden" name="company_id" id="edit_cid">
+            
+            <div class="form-row">
+                <div class="form-group" style="flex:2">
+                    <label>Company / Agency Name *</label>
+                    <input type="text" name="name" id="edit_name" class="form-control" required>
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>Status</label>
+                    <select name="status" id="edit_status" class="form-control">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Login Slug (Appears in URL) *</label>
+                <div style="display:flex; gap:5px;">
+                    <span style="padding:8px 0; color:var(--text-muted); font-size:0.9rem;">.../login.php?company=</span>
+                    <input type="text" name="login_slug" id="edit_slug" class="form-control" required style="flex:1" 
+                        oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')">
+                </div>
+                <small style="color:var(--text-muted)">Changing this will break existing login bookmarks.</small>
+            </div>
+
+            <div style="margin:1.5rem 0;padding:1.2rem;background:#f8fafc;border:1px solid var(--glass-border);border-radius:12px;">
+                <label style="display:block;margin-bottom:1rem;font-weight:600;font-size:0.95rem;color:var(--primary-color)">Module Access Control</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="leads" id="edit_mod_leads"> Lead CRM Pipeline</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="hrms" id="edit_mod_hrms"> HRMS Core (Staff/Attend)</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="payroll" id="edit_mod_payroll"> Payroll & Salary</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="company_management" id="edit_mod_company_management"> Client Settings Panel</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>User Limit</label>
+                    <input type="number" name="user_limit" id="edit_user_limit" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Lead Limit</label>
+                    <input type="number" name="lead_limit" id="edit_lead_limit" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Storage Limit (MB)</label>
+                    <input type="number" name="storage_limit" id="edit_storage_limit" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Parent Branch</label>
+                <select name="parent_id" id="edit_parent_id" class="form-control">
+                    <option value="">No Parent</option>
+                    <?php foreach($main_branches as $mb): ?>
+                        <option value="<?= $mb['id'] ?>"><?= htmlspecialchars($mb['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" style="flex:1" onclick="document.getElementById('editModal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:2">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function showEditModal(company, perms) {
+    document.getElementById('edit_cid').value = company.id;
+    document.getElementById('edit_name').value = company.name;
+    document.getElementById('edit_slug').value = company.login_slug || '';
+    document.getElementById('edit_status').value = company.status;
+    document.getElementById('edit_user_limit').value = company.user_limit;
+    document.getElementById('edit_lead_limit').value = company.lead_limit;
+    document.getElementById('edit_storage_limit').value = company.storage_limit_mb;
+    document.getElementById('edit_parent_id').value = company.parent_id || '';
+
+    // Set modules
+    document.getElementById('edit_mod_leads').checked = !!perms.leads;
+    document.getElementById('edit_mod_hrms').checked = !!perms.hrms;
+    document.getElementById('edit_mod_payroll').checked = !!perms.payroll;
+    document.getElementById('edit_mod_company_management').checked = !!perms.company_management;
+
+    document.getElementById('editModal').classList.add('open');
+}
+
 function toggleBranchFields() {
     const isMain = document.getElementById('branchType').value === '1';
     document.getElementById('parentBranchGroup').style.display = isMain ? 'none' : 'block';
