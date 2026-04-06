@@ -18,7 +18,7 @@ $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
 // Fetch Project
-$stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND p.company_id IN ($cids_in)");
+$stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in))");
 $stmt->execute([$pid]);
 $p = $stmt->fetch();
 
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE projects SET project_name = ?, client_name = ?, total_value = ?, advance_paid = ?, commission_percent = ?, start_date = ?, end_date = ? WHERE id = ? AND company_id IN ($cids_in)")
+        $pdo->prepare("UPDATE projects SET project_name = ?, client_name = ?, total_value = ?, advance_paid = ?, commission_percent = ?, start_date = ?, end_date = ? WHERE id = ? AND (company_id IN ($cids_in) OR branch_id IN ($cids_in))")
             ->execute([$pname, $client, $total, $adv, $comm, $s_date, $e_date, $pid]);
 
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
@@ -124,7 +124,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq) {
     try {
         $pdo->beginTransaction();
         $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
-        $pdo->prepare("DELETE FROM projects WHERE id = ? AND company_id IN ($cids_in)")->execute([$pid]);
+        $pdo->prepare("DELETE FROM projects WHERE id = ? AND (company_id IN ($cids_in) OR branch_id IN ($cids_in))")->execute([$pid]);
         $pdo->commit();
         header("Location: projects.php?msg=Project Deleted Successfully"); exit();
     } catch (Exception $e) { $pdo->rollBack(); die($e->getMessage()); }
