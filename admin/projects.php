@@ -8,16 +8,39 @@ $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
 $role = $_SESSION['user_role'] ?? '';
 
+// --- AUTO-PATCH: Ensure Database is Correct ---
+try {
+    $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'commission_rate'");
+    if (!$stmt->fetch()) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN commission_rate DECIMAL(5,2) DEFAULT 0.00 AFTER price");
+    }
+} catch (Exception $e) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            company_id INT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT NULL,
+            price DECIMAL(10,2) DEFAULT 0.00,
+            commission_rate DECIMAL(5,2) DEFAULT 0.00,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch(Exception $e2) {}
+}
+
 // Fetch Branch Info
 $branch_info = $pdo->prepare("SELECT is_main_branch, parent_id FROM companies WHERE id = ?");
 $branch_info->execute([$cid]);
 $comp_data = $branch_info->fetch();
 $is_hq = (bool)($comp_data['is_main_branch'] ?? false);
-$parent_id = $comp_data['parent_id'] ?? null;
 
-// Determine Catalog Owner (Sub-branches use their parent's catalog)
-// If current is HQ, use self. If sub-branch, use parent.
-$catalog_owner_id = ($is_hq || !$parent_id) ? $cid : $parent_id;
+// Dynamically Find HQ ID
+$hq_check = $pdo->prepare("SELECT id FROM companies WHERE is_main_branch = 1 LIMIT 1");
+$hq_check->execute();
+$hq_id = $hq_check->fetchColumn() ?: 1;
+
+// Determine Catalog Owner (Sub-branches use HQ catalog)
+$catalog_owner_id = $hq_id;
 
 // 0. Auto-patch for Projects Table
 try {

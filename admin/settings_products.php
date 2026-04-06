@@ -7,24 +7,44 @@ checkAccess('admin');
 $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
-// Check if current branch is HQ
-$is_hq_stmt = $pdo->prepare("SELECT is_main_branch, parent_id FROM companies WHERE id = ?");
-$is_hq_stmt->execute([$cid]);
-$comp_info = $is_hq_stmt->fetch();
-$is_hq = (bool)($comp_info['is_main_branch'] ?? false);
-$parent_id = $comp_info['parent_id'] ?? null;
+// --- AUTO-PATCH: Ensure Database is Correct (No Scripts Needed) ---
+try {
+    $stmt = $pdo->query("SHOW COLUMNS FROM products LIKE 'commission_rate'");
+    if (!$stmt->fetch()) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN commission_rate DECIMAL(5,2) DEFAULT 0.00 AFTER price");
+    }
+} catch (Exception $e) {
+    // If table doesn't exist at all, create it
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            company_id INT NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT NULL,
+            price DECIMAL(10,2) DEFAULT 0.00,
+            commission_rate DECIMAL(5,2) DEFAULT 0.00,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+    } catch(Exception $e2) {}
+}
 
-// Determine Catalog Owner (Sub-branches use their parent's catalog)
-$catalog_owner_id = ($is_hq || !$parent_id) ? $cid : $parent_id;
+// Check if current branch is HQ
+$hq_check = $pdo->prepare("SELECT id FROM companies WHERE is_main_branch = 1 LIMIT 1");
+$hq_check->execute();
+$hq_id = $hq_check->fetchColumn() ?: 1; // Default to 1 if not found
+
+$is_hq_stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$is_hq_stmt->execute([$cid]);
+$is_hq = (bool)$is_hq_stmt->fetchColumn();
+
+// Determine Catalog Owner: Everyone sees HQ catalog
+$catalog_owner_id = $hq_id;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'create') {
-        // Security: Only HQ admin can manage the global catalog
-        $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
-        $branch_info->execute([$cid]);
-        if (!$branch_info->fetchColumn()) { die("Access Denied: Only HQ Admin can manage the catalog."); }
+        if (!$is_hq) { die("Access Denied: Only HQ Admin can manage the global catalog."); }
 
         $name = trim($_POST['name'] ?? '');
         $comm = (float)($_POST['commission_rate'] ?? 0);
