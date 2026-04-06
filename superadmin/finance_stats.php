@@ -20,6 +20,15 @@ if ($role === 'super_admin') {
 
 $cids_in = !empty($branch_ids) ? implode(',', $branch_ids) : 'all';
 
+// Handle Deletions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'delete_payment') {
+        $id = (int)$_POST['id'];
+        $pdo->prepare("DELETE FROM franchise_payments WHERE id = ?")->execute([$id]);
+        header("Location: finance_stats.php"); exit();
+    }
+}
+
 // 1. Global Summaries
 $sql = "SELECT SUM(amount) as global_sales, SUM(admin_cut) as total_commissions, SUM(franchise_share) as total_franchise_payouts, COUNT(id) as total_transactions FROM franchise_payments WHERE status = 'approved'";
 if ($cids_in !== 'all') {
@@ -27,13 +36,17 @@ if ($cids_in !== 'all') {
 }
 $totals = $pdo->query($sql)->fetch();
 
-// 2. Performance by Company
-$sql2 = "SELECT c.name as company_name, SUM(p.amount) as total_generated, SUM(p.admin_cut) as commission_earned, COUNT(p.id) as approved_count FROM franchise_payments p JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved'";
+// 2. Performance by Company (Using LEFT JOIN to show records from deleted companies)
+$sql2 = "SELECT COALESCE(c.name, 'Deleted Account / Orphan') as company_name, SUM(p.amount) as total_generated, SUM(p.admin_cut) as commission_earned, COUNT(p.id) as approved_count FROM franchise_payments p LEFT JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved'";
 if ($cids_in !== 'all') {
     $sql2 .= " AND p.company_id IN ($cids_in)";
 }
-$sql2 .= " GROUP BY c.id ORDER BY total_generated DESC";
+$sql2 .= " GROUP BY p.company_id ORDER BY total_generated DESC";
 $company_performance = $pdo->query($sql2)->fetchAll();
+
+// 3. Recent Raw Transactions (To see exactly what's making up the numbers)
+$sql3 = "SELECT p.*, COALESCE(c.name, 'Unknown Vendor') as company_name FROM franchise_payments p LEFT JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved' ORDER BY p.id DESC LIMIT 50";
+$all_transactions = $pdo->query($sql3)->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -116,6 +129,43 @@ if ($role === 'super_admin') {
                 <?php endif; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- Raw Transactions (Detail Detail) -->
+    <div class="content-card">
+        <div class="card-header">
+            <h4>Detailed Transactions History</h4>
+            <p style="font-size:0.8rem; color:var(--text-muted);">Every approved payment record in the system.</p>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="table">
+                <thead>
+                    <tr><th>ID</th><th>Branch</th><th>Customer</th><th>Gross Amount</th><th>Your Profit</th><th>Date</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    <?php foreach($all_transactions as $t): ?>
+                    <tr>
+                        <td>#<?= $t['id'] ?></td>
+                        <td><span style="font-weight:600;"><?= htmlspecialchars($t['company_name']) ?></span></td>
+                        <td><?= htmlspecialchars($t['client_name']) ?></td>
+                        <td>₹<?= number_format($t['amount'], 2) ?></td>
+                        <td style="color:#10b981; font-weight:700;">+ ₹<?= number_format($t['admin_cut'], 2) ?></td>
+                        <td><?= date('d M Y', strtotime($t['payment_date'])) ?></td>
+                        <td>
+                            <form method="POST" onsubmit="return confirm('Delete this record? The stats will be updated.')">
+                                <input type="hidden" name="action" value="delete_payment">
+                                <input type="hidden" name="id" value="<?= $t['id'] ?>">
+                                <button type="submit" class="btn btn-sm btn-danger" style="padding:4px 8px; font-size:0.7rem;">Delete Record</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php if(!count($all_transactions)): ?>
+                        <tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">No records found.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </main>
 </body>
