@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS attendance (
 
 -- Seed Data: Create Default Super Admin (Password is 'password')
 INSERT INTO users (company_id, name, email, password, role, status)
-VALUES (NULL, 'Super Admin', 'superadmin@drhrms.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'active')
+VALUES (NULL, 'Super Admin', 'superadmin@loom.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'active')
 ON DUPLICATE KEY UPDATE email=email;
 
 -- Seed Data: Create Demo Company

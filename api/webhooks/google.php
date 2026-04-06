@@ -14,7 +14,7 @@ if ($input) {
 
     // Verify Google Key (Google adds a 'google_key' in lead form settings)
     $google_key = $data['google_key'] ?? '';
-    if ($google_key === 'drhrms_google_secret_2024') {
+    if ($google_key === 'loom_google_secret_2024') {
         
         $company_id = 1; // Mapped company
         

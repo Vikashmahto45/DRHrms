@@ -86,7 +86,7 @@ $total_requests  = $pdo->query("SELECT COUNT(*) FROM demo_requests")->fetchColum
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Settings - DRHrms</title>
+    <title>System Settings - Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime('../assets/css/style.css') ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= filemtime('../assets/css/admin.css') ?>">
@@ -152,11 +152,11 @@ $total_requests  = $pdo->query("SELECT COUNT(*) FROM demo_requests")->fetchColum
                 <input type="hidden" name="action" value="update_bank">
                 <div class="form-group">
                     <label>Bank Account Details</label>
-                    <textarea name="bank_details" class="form-control" rows="4" placeholder="Bank Name: HDFC Bank&#10;Account Name: DR HRMS Pvt Ltd&#10;Account No: 502000...&#10;IFSC: HDFC000123..."><?= htmlspecialchars($hq_bank_details) ?></textarea>
+                    <textarea name="bank_details" class="form-control" rows="4" placeholder="Bank Name: HDFC Bank&#10;Account Name: Loom Pvt Ltd&#10;Account No: 502000...&#10;IFSC: HDFC000123..."><?= htmlspecialchars($hq_bank_details) ?></textarea>
                 </div>
                 <div class="form-group">
                     <label>UPI ID (Google Pay / PhonePe / Paytm)</label>
-                    <input type="text" name="upi_id" class="form-control" value="<?= htmlspecialchars($hq_upi_id) ?>" placeholder="e.g. drhrms@upi">
+                    <input type="text" name="upi_id" class="form-control" value="<?= htmlspecialchars($hq_upi_id) ?>" placeholder="e.g. loom@upi">
                 </div>
                 <div class="form-group">
                     <label>Payment QR Code Image</label>

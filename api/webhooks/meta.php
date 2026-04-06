@@ -4,7 +4,7 @@ require_once '../../config/database.php';
 
 // 1. Facebook Webhook Verification (Hub Challenge)
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['hub_mode']) && $_GET['hub_mode'] === 'subscribe') {
-    $verify_token = 'drhrms_meta_webhook_secret_2024'; // This would be configured in Meta App Dashboard
+    $verify_token = 'loom_meta_webhook_secret_2024'; // This would be configured in Meta App Dashboard
     if ($_GET['hub_verify_token'] === $verify_token) {
         echo $_GET['hub_challenge'];
         exit;
