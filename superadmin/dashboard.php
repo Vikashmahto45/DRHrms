@@ -341,18 +341,50 @@ try {
         </div>
 
         <?php
-        // Calculate Totals 
-        $sys_revenue = 0;
+        // Calculate Global Totals (Include ALL branches for full financial history)
         $sys_leads = 0;
         $sys_converted = 0;
         $sys_dsrs = 0;
-        $all_branches = array_merge(array_values($main_branches ?? []), array_values($sub_branches ?? []));
-        foreach($all_branches as $b) {
-            $sys_revenue += $b['approved_revenue'] ?? 0;
-            $sys_leads += $b['total_leads'] ?? 0;
-            $sys_converted += $b['converted_leads'] ?? 0;
-            $sys_dsrs += $b['total_dsrs'] ?? 0;
+
+        // 1. Total Revenue breakdown from ALL payments
+        $stmt_rev = $pdo->query("
+            SELECT 
+                SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as approved_total,
+                SUM(amount) as gross_volume,
+                SUM(CASE WHEN (category = 'DSR Field Deal') AND status = 'approved' THEN amount ELSE 0 END) as dsr_approved,
+                SUM(CASE WHEN (category = 'DSR Field Deal') THEN amount ELSE 0 END) as dsr_gross,
+                SUM(CASE WHEN (project_id IS NOT NULL AND category != 'DSR Field Deal') AND status = 'approved' THEN amount ELSE 0 END) as project_approved,
+                SUM(CASE WHEN (project_id IS NOT NULL AND category != 'DSR Field Deal') THEN amount ELSE 0 END) as project_gross,
+                SUM(CASE WHEN (project_id IS NULL AND category != 'DSR Field Deal') AND status = 'approved' THEN amount ELSE 0 END) as franchise_approved,
+                SUM(CASE WHEN (project_id IS NULL AND category != 'DSR Field Deal') THEN amount ELSE 0 END) as franchise_gross
+            FROM franchise_payments
+        ");
+        $rev_totals = $stmt_rev->fetch();
+
+        $sys_revenue = $rev_totals['approved_total'] ?? 0;
+        
+        // Sum operational stats
+        $all_active_inactive = $pdo->query("SELECT id, 
+            (SELECT COUNT(*) FROM leads_crm WHERE company_id = c.id) as leads,
+            (SELECT COUNT(*) FROM leads_crm WHERE company_id = c.id AND status = 'Converted') as converted,
+            (SELECT COUNT(*) FROM dsr WHERE company_id = c.id) as dsrs
+            FROM companies c")->fetchAll();
+
+        foreach($all_active_inactive as $b) {
+            $sys_leads += $b['leads'] ?? 0;
+            $sys_converted += $b['converted'] ?? 0;
+            $sys_dsrs += $b['dsrs'] ?? 0;
         }
+
+        // Fetch Global Sales Ledger (Latest 15)
+        $ledger_stmt = $pdo->query("
+            SELECT f.*, c.name as branch_name 
+            FROM franchise_payments f 
+            JOIN companies c ON f.company_id = c.id 
+            ORDER BY f.created_at DESC 
+            LIMIT 15
+        ");
+        $global_ledger = $ledger_stmt->fetchAll();
 
         // Chart Data Prep
         $chart_labels = [];
@@ -369,27 +401,35 @@ try {
         }
         ?>
 
-        <!-- 1. Global Metrics -->
+        <!-- 1. Global Metrics (Categorized Revenue) -->
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.5rem; margin-bottom:2.5rem;">
+            <!-- Project Sales -->
             <div style="background:linear-gradient(135deg, #4f46e5, #7c3aed); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(79,70,229,0.4); position:relative; overflow:hidden;">
-                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">💰</div>
-                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Total Revenue</div>
-                <div style="font-size:2.2rem; font-weight:800;">₹<?= number_format($sys_revenue) ?></div>
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">💎</div>
+                <div style="font-size:0.8rem; opacity:0.8; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Project Sales</div>
+                <div style="font-size:1.8rem; font-weight:800;">₹<?= number_format($rev_totals['project_approved']) ?></div>
+                <div style="font-size:0.75rem; opacity:0.7;">Gross Volume: ₹<?= number_format($rev_totals['project_gross']) ?></div>
             </div>
-            <div style="background:linear-gradient(135deg, #10b981, #059669); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(16,185,129,0.4); position:relative; overflow:hidden;">
-                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🎯</div>
-                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">System Leads</div>
-                <div style="font-size:2.2rem; font-weight:800;"><?= number_format($sys_leads) ?></div>
-            </div>
+            <!-- DSR Deals -->
             <div style="background:linear-gradient(135deg, #f59e0b, #d97706); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(245,158,11,0.4); position:relative; overflow:hidden;">
-                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">📝</div>
-                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Total DSRs</div>
-                <div style="font-size:2.2rem; font-weight:800;"><?= number_format($sys_dsrs) ?></div>
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🤝</div>
+                <div style="font-size:0.8rem; opacity:0.8; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">DSR Field Deals</div>
+                <div style="font-size:1.8rem; font-weight:800;">₹<?= number_format($rev_totals['dsr_approved']) ?></div>
+                <div style="font-size:0.75rem; opacity:0.7;">Gross Volume: ₹<?= number_format($rev_totals['dsr_gross']) ?></div>
             </div>
+            <!-- Franchise Revenue -->
+            <div style="background:linear-gradient(135deg, #10b981, #059669); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(16,185,129,0.4); position:relative; overflow:hidden;">
+                <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🏢</div>
+                <div style="font-size:0.8rem; opacity:0.8; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Franchise Revenue / Fees</div>
+                <div style="font-size:1.8rem; font-weight:800;">₹<?= number_format($rev_totals['franchise_approved']) ?></div>
+                <div style="font-size:0.75rem; opacity:0.7;">Gross Volume: ₹<?= number_format($rev_totals['franchise_gross']) ?></div>
+            </div>
+            <!-- All System Leads -->
             <div style="background:linear-gradient(135deg, #ec4899, #be185d); padding:1.8rem; border-radius:16px; color:#fff; box-shadow:0 10px 25px -5px rgba(236,72,153,0.4); position:relative; overflow:hidden;">
-               <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🏢</div>
-                <div style="font-size:0.9rem; opacity:0.9; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Active Branches</div>
-                <div style="font-size:2.2rem; font-weight:800;"><?= count($all_branches) ?></div>
+               <div style="position:absolute; right:-20px; top:-20px; font-size:6rem; opacity:0.1;">🎯</div>
+                <div style="font-size:0.8rem; opacity:0.8; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">System Leads</div>
+                <div style="font-size:1.8rem; font-weight:800;"><?= number_format($sys_leads) ?></div>
+                <div style="font-size:0.75rem; opacity:0.7;">Conversions: <?= number_format($sys_converted) ?></div>
             </div>
         </div>
 
@@ -413,10 +453,46 @@ try {
             </div>
         </div>
 
-        <!-- 3. Master Data Table -->
-        <div class="content-card">
-            <div class="card-header">
-                <h2>Complete Branch Matrix</h2>
+        <!-- 3. Global Sales Ledger -->
+        <div class="content-card" style="margin-bottom:2.5rem;">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Master Sales Ledger</h2>
+                <a href="finance_stats.php" class="btn btn-sm btn-outline">Full Analytics →</a>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Branch</th>
+                            <th>Client / Item</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($global_ledger as $row): ?>
+                        <tr>
+                            <td style="font-size:0.8rem; color:var(--text-muted);"><?= date('d M, Y', strtotime($row['payment_date'])) ?></td>
+                            <td style="font-weight:600;"><?= htmlspecialchars($row['branch_name']) ?></td>
+                            <td><?= htmlspecialchars($row['client_name']) ?></td>
+                            <td><span class="mini-chip"><?= htmlspecialchars($row['category']) ?></span></td>
+                            <td style="font-weight:700; color:var(--text-main);">₹<?= number_format($row['amount'], 2) ?></td>
+                            <td>
+                                <span class="badge badge-<?= $row['status'] ?>"><?= ucfirst($row['status']) ?></span>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php if(empty($global_ledger)): ?>
+                            <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No transactions recorded in the master ledger yet.</td></tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. Complete Branch Matrix -->
             </div>
             <div style="overflow-x:auto;">
                 <table class="table" style="width:100%;">

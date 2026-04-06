@@ -211,6 +211,7 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                         <label>Category</label>
                         <select name="category" class="form-control">
                             <option value="New Sale">New Sale</option>
+                            <option value="DSR Field Deal">DSR Field Deal</option>
                             <option value="Renewal">Renewal</option>
                             <option value="Upgrade">Upgrade</option>
                             <option value="Maintenance">Maintenance</option>
