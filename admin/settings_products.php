@@ -8,9 +8,14 @@ $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
 // Check if current branch is HQ
-$is_hq_stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$is_hq_stmt = $pdo->prepare("SELECT is_main_branch, parent_id FROM companies WHERE id = ?");
 $is_hq_stmt->execute([$cid]);
-$is_hq = (bool)$is_hq_stmt->fetchColumn();
+$comp_info = $is_hq_stmt->fetch();
+$is_hq = (bool)($comp_info['is_main_branch'] ?? false);
+$parent_id = $comp_info['parent_id'] ?? null;
+
+// Determine Catalog Owner (Sub-branches use their parent's catalog)
+$catalog_owner_id = ($is_hq || !$parent_id) ? $cid : $parent_id;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -56,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $stmt = $pdo->prepare("SELECT * FROM settings_products WHERE company_id = ? ORDER BY name ASC");
-$stmt->execute([$cid]);
+$stmt->execute([$catalog_owner_id]);
 $products = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>

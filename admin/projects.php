@@ -9,9 +9,14 @@ $cid = $_SESSION['company_id'];
 $role = $_SESSION['user_role'] ?? '';
 
 // Fetch Branch Info
-$branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$branch_info = $pdo->prepare("SELECT is_main_branch, parent_id FROM companies WHERE id = ?");
 $branch_info->execute([$cid]);
-$is_hq = (bool)$branch_info->fetchColumn();
+$comp_data = $branch_info->fetch();
+$is_hq = (bool)$comp_data['is_main_branch'];
+$parent_id = $comp_data['parent_id'] ?? null;
+
+// Determine Catalog Owner (Sub-branches use their parent's catalog)
+$catalog_owner_id = ($is_hq || !$parent_id) ? $cid : $parent_id;
 
 // 0. Auto-patch for Projects Table
 try {
@@ -133,7 +138,7 @@ $staff_members = $sp_stmt->fetchAll();
 
 // Fetch Service Catalog
 $svc_stmt = $pdo->prepare("SELECT id, name, commission_rate FROM settings_products WHERE company_id = ? ORDER BY name ASC");
-$svc_stmt->execute([$cid]);
+$svc_stmt->execute([$catalog_owner_id]);
 $catalog = $svc_stmt->fetchAll();
 ?>
 <!DOCTYPE html>
