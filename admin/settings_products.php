@@ -22,13 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$branch_info->fetchColumn()) { die("Access Denied: Only HQ Admin can manage the catalog."); }
 
         $name = trim($_POST['name'] ?? '');
-        $price = (float)($_POST['price'] ?? 0);
         $comm = (float)($_POST['commission_rate'] ?? 0);
         
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("INSERT INTO settings_products (company_id, name, price, commission_rate, description) VALUES (?, ?, ?, ?, ?)");
-            if ($stmt->execute([$cid, $name, $price, $comm, $description])) {
+            $stmt = $pdo->prepare("INSERT INTO settings_products (company_id, name, commission_rate, description) VALUES (?, ?, ?, ?)");
+            if ($stmt->execute([$cid, $name, $comm, $description])) {
                 $msg = "Service created successfully."; $msgType = "success";
             }
         }
@@ -37,12 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update') {
         $id = (int)$_POST['id'];
         $name = trim($_POST['name'] ?? '');
-        $price = (float)($_POST['price'] ?? 0);
         $comm = (float)($_POST['commission_rate'] ?? 0);
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("UPDATE settings_products SET name = ?, price = ?, commission_rate = ?, description = ? WHERE id = ? AND company_id = ?");
-            if ($stmt->execute([$name, $price, $comm, $description, $id, $cid])) {
+            $stmt = $pdo->prepare("UPDATE settings_products SET name = ?, commission_rate = ?, description = ? WHERE id = ? AND company_id = ?");
+            if ($stmt->execute([$name, $comm, $description, $id, $cid])) {
                 $msg = "Service updated successfully."; $msgType = "success";
             }
         }
@@ -93,7 +91,6 @@ $products = $stmt->fetchAll();
             <thead>
                 <tr>
                     <th>Service Name</th>
-                    <th>Base Price (₹)</th>
                     <th>Commission (%)</th>
                     <?php if ($is_hq): ?><th style="text-align:right">Actions</th><?php endif; ?>
                 </tr>
@@ -107,11 +104,10 @@ $products = $stmt->fetchAll();
                             <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; max-width:400px;"><?= nl2br(htmlspecialchars($p['description'])) ?></div>
                         <?php endif; ?>
                     </td>
-                    <td style="color:#10b981; font-weight:600;">₹<?= number_format($p['price'], 2) ?></td>
                     <td style="font-weight:700; color:#3b82f6;"><?= $p['commission_rate'] ?>%</td>
                     <?php if ($is_hq): ?>
                     <td style="text-align:right">
-                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['commission_rate'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['commission_rate'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure?');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $p['id'] ?>">
@@ -143,10 +139,6 @@ $products = $stmt->fetchAll();
                 <input type="text" name="name" class="form-control" placeholder="e.g. Advanced SEO Package" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Base Price (₹)</label>
-                <input type="number" step="0.01" name="price" class="form-control" required>
-            </div>
-            <div class="form-group">
                 <label class="form-label">Default Commission (%)</label>
                 <input type="number" step="0.01" name="commission_rate" class="form-control" placeholder="e.g. 15.00" required>
             </div>
@@ -172,10 +164,6 @@ $products = $stmt->fetchAll();
                 <input type="text" name="name" id="edit_name" class="form-control" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Base Price (₹)</label>
-                <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required>
-            </div>
-            <div class="form-group">
                 <label class="form-label">Default Commission (%)</label>
                 <input type="number" step="0.01" name="commission_rate" id="edit_commission" class="form-control" required>
             </div>
@@ -189,10 +177,9 @@ $products = $stmt->fetchAll();
 </div>
 
 <script>
-function editP(id, name, price, comm, desc) {
+function editP(id, name, comm, desc) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_name').value = name;
-    document.getElementById('edit_price').value = price;
     document.getElementById('edit_commission').value = comm;
     document.getElementById('edit_description').value = desc;
     document.getElementById('editModal').classList.add('open');
