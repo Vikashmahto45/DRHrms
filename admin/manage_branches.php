@@ -24,7 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $admin_name  = trim($_POST['admin_name'] ?? '');
         $admin_email = trim($_POST['admin_email'] ?? '');
         $admin_pass  = $_POST['admin_password'] ?? '';
-        $commission  = (float)($_POST['commission_rate'] ?? 80.00);
+        $sel_modules = $_POST['modules'] ?? [];
+        $status      = $_POST['status'] ?? 'active';
 
         if ($name && $admin_name && $admin_email && $admin_pass) {
             if (strlen($admin_pass) < 6) {
@@ -42,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $slug = $base_slug . '-' . $i++;
                     }
 
-                    $stmt = $pdo->prepare("INSERT INTO companies (name, login_slug, status, subscription_end_date, user_limit, lead_limit, storage_limit_mb, is_main_branch, parent_id, commission_rate) VALUES (?, ?, 'active', NULL, 10, 100, 500, 0, ?, ?)");
-                    $stmt->execute([$name, $slug, $cid, $commission]);
+                    $stmt = $pdo->prepare("INSERT INTO companies (name, login_slug, status, subscription_end_date, user_limit, lead_limit, storage_limit_mb, is_main_branch, parent_id) VALUES (?, ?, ?, NULL, 10, 100, 500, 0, ?)");
+                    $stmt->execute([$name, $slug, $status, $cid]);
                     $new_company_id = $pdo->lastInsertId();
 
                     $hash = password_hash($admin_pass, PASSWORD_DEFAULT);
@@ -51,13 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$new_company_id, $admin_name, $admin_email, $hash]);
 
                     // Default Permissions
-                    $modules = ['leads', 'hrms', 'company_management'];
-                    foreach ($modules as $mod) {
+                    // Sync Modules from Selection
+                    foreach ($sel_modules as $mod) {
                         $pdo->prepare("INSERT INTO permissions_map (company_id,module_name,is_enabled) VALUES (?,?,1)")->execute([$new_company_id, $mod]);
                     }
 
                     $pdo->commit();
-                    logActivity('sub_branch_created', "Created branch: $name with commission: $commission%", $cid);
+                    logActivity('sub_branch_created', "Created branch: $name by main branch ID: $cid", $new_company_id);
                     $msg = "Branch '<strong>{$name}</strong>' created! Login link: <strong><a href='<?= BASE_URL ?>login.php?company={$slug}' target='_blank'>login.php?company={$slug}</a></strong>"; $msgType = 'success';
                 } catch (Exception $e) {
                     $pdo->rollBack();
@@ -170,18 +171,12 @@ $branchList = $branches->fetchAll();
     <div class="modal-box" style="max-width:650px;">
         <button class="modal-close" onclick="document.getElementById('createModal').classList.remove('open')">&times;</button>
         <h3>Register New Sub-Branch</h3>
-        <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">This branch will automatically be linked to your main office.</p>
+        <p style="color:var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">This branch will automatically be linked to your main office.</p>
         <form method="POST">
             <input type="hidden" name="action" value="create">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Branch Name *</label>
-                    <input type="text" name="name" class="form-control" required placeholder="e.g. Acme Corp - Location B">
-                </div>
-                <div class="form-group">
-                    <label>Commission Rate (%) *</label>
-                    <input type="number" step="0.01" name="commission_rate" class="form-control" value="80.00" required>
-                </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label>Branch Name *</label>
+                <input type="text" name="name" class="form-control" required placeholder="e.g. Acme Corp - Location B">
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -197,6 +192,25 @@ $branchList = $branches->fetchAll();
                 <label>Set Admin Password *</label>
                 <input type="password" name="admin_password" class="form-control" required minlength="6">
             </div>
+
+            <div style="margin:1.5rem 0;padding:1.2rem;background:#f8fafc;border:1px solid var(--glass-border);border-radius:12px;">
+                <label style="display:block;margin-bottom:1rem;font-weight:600;font-size:0.95rem;color:var(--primary-color)">Module Access Control</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="leads" checked> Lead CRM Pipeline</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="hrms" checked> HRMS Core (Staff/Attend)</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="payroll"> Payroll & Salary</label>
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="company_management" checked> Client Settings Panel</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Initial Status</label>
+                <select name="status" class="form-control">
+                    <option value="active">Active (Immediate Access)</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline" style="flex:1" onclick="document.getElementById('createModal').classList.remove('open')">Cancel</button>
                 <button type="submit" class="btn btn-primary" style="flex:2">Create Branch</button>
