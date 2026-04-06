@@ -92,6 +92,18 @@ $placeholders = implode(',', array_fill(0, count($target_types), '?'));
 $ann_stmt = $pdo->prepare("SELECT message, type FROM announcements WHERE target IN ($placeholders) AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC");
 $ann_stmt->execute($target_types);
 $announcements = $ann_stmt->fetchAll();
+
+// 7-Day Revenue Trend Data
+$revenue_data = [];
+$revenue_labels = [];
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $revenue_labels[] = date('D', strtotime($date));
+    
+    $stmt = $pdo->prepare("SELECT SUM(amount) FROM franchise_payments WHERE company_id IN ($cids_in) AND status = 'approved' AND DATE(payment_date) = ?");
+    $stmt->execute([$date]);
+    $revenue_data[] = (float)$stmt->fetchColumn() ?: 0;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,6 +114,10 @@ $announcements = $ann_stmt->fetchAll();
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container { position: relative; height: 180px; width: 100%; margin-top: 15px; }
+    </style>
 </head>
 <body>
 <?php include 'includes/sidebar.php'; ?>
@@ -129,6 +145,7 @@ $announcements = $ann_stmt->fetchAll();
 
     <div class="page-header">
         <div>
+            <div style="background:#000; color:#fff; padding:5px; margin-bottom:10px; font-size:12px; text-align:center;">SYSTEM UPDATED (CHECK) - V1</div>
             <h1><?= htmlspecialchars($company['name']) ?></h1>
             <p style="color:var(--text-muted)">Welcome back, <?= htmlspecialchars($_SESSION['user_name']) ?>. Plan: <strong style="color:var(--primary-color)"><?= $company['plan_name'] ?? 'Starter' ?></strong></p>
         </div>
@@ -246,21 +263,14 @@ $announcements = $ann_stmt->fetchAll();
 
         <!-- Right Column: Recent Activity & Attendance -->
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
-            <!-- Attendance monitor -->
-            <div class="content-card" style="margin-bottom:0;">
+            <!-- Revenue Trend Graph -->
+            <div class="content-card" style="margin-bottom:0; border-top: 4px solid var(--primary-color);">
                 <div class="card-header">
-                    <h2>💼 Active Staff</h2>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; box-shadow: 0 0 10px #10b981;"></span>
-                        <span style="font-size: 0.85rem; font-weight: 600; color:#10b981;"><?= $active_staff_count ?> Online</span>
-                    </div>
+                    <h2>📈 Revenue Trend</h2>
+                    <span style="font-size: 0.75rem; color:var(--text-muted);">Last 7 Days</span>
                 </div>
-                <div style="display:flex; gap: 10px; margin-bottom: 1rem;">
-                    <button class="btn btn-sm btn-outline" style="flex:1;">View Map</button>
-                    <button class="btn btn-sm btn-outline" style="flex:1;">Quick Export</button>
-                </div>
-                <div style="color:var(--text-muted); font-size:0.8rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
-                    <?= $total_staff - $active_staff_count ?> staff members are currently clocked out.
+                <div class="chart-container">
+                    <canvas id="revenueTrendChart"></canvas>
                 </div>
             </div>
 
@@ -292,5 +302,52 @@ $announcements = $ann_stmt->fetchAll();
 
     </main>
 </div>
+<script>
+    const ctx = document.getElementById('revenueTrendChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+    gradient.addColorStop(0, 'rgba(99, 102, 241, 0.2)');
+    gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: <?= json_encode($revenue_labels) ?>,
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: <?= json_encode($revenue_data) ?>,
+                borderColor: '#6366f1',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#6366f1',
+                pointBorderColor: '#fff',
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    titleFont: { family: 'Inter' },
+                    bodyFont: { family: 'Inter' },
+                    callbacks: {
+                        label: function(context) {
+                            return '₹' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { display: true, grid: { display: false } },
+                y: { display: false, beginAtZero: true }
+            }
+        }
+    });
+</script>
 </body>
 </html>
