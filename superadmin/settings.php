@@ -78,7 +78,7 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
 
 // Stats for the settings page context
 $total_companies = $pdo->query("SELECT COUNT(*) FROM companies")->fetchColumn();
-$total_users     = $pdo->query("SELECT COUNT(*) FROM users WHERE role != 'super_admin'")->fetchColumn();
+$total_users = $pdo->query("SELECT COUNT(*) FROM users u JOIN companies c ON u.company_id = c.id WHERE u.status='active' AND c.status='active' AND u.role != 'super_admin'")->fetchColumn();
 $total_requests  = $pdo->query("SELECT COUNT(*) FROM demo_requests")->fetchColumn();
 ?>
 <!DOCTYPE html>
@@ -197,7 +197,7 @@ $total_requests  = $pdo->query("SELECT COUNT(*) FROM demo_requests")->fetchColum
     <div class="content-card">
         <div class="card-header"><h2>⚡ Quick Actions</h2></div>
         <div style="display:flex;gap:1rem;flex-wrap:wrap">
-            <a href="companies.php" class="btn btn-outline">Manage Companies</a>
+            <a href="main_branch.php" class="btn btn-outline">Manage Companies</a>
             <a href="admins.php" class="btn btn-outline">Manage Admins</a>
             <a href="../logout.php" class="btn btn-danger">Logout</a>
         </div>

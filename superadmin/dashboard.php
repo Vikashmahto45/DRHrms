@@ -20,7 +20,7 @@ try {
         SELECT COUNT(*) 
         FROM users u 
         INNER JOIN companies c ON u.company_id = c.id 
-        WHERE u.role IN ('staff','manager','sales_person') 
+        WHERE u.role != 'super_admin' 
           AND u.status = 'active' 
           AND c.status = 'active'
     ");
