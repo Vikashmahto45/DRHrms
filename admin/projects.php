@@ -130,6 +130,11 @@ foreach($results as $res) {
 $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
 $sp_stmt->execute([$cid]);
 $staff_members = $sp_stmt->fetchAll();
+
+// Fetch Service Catalog
+$svc_stmt = $pdo->prepare("SELECT id, name, commission_rate FROM settings_products WHERE company_id = ? ORDER BY name ASC");
+$svc_stmt->execute([$cid]);
+$catalog = $svc_stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -255,8 +260,13 @@ $staff_members = $sp_stmt->fetchAll();
                 <input type="text" name="client_name" class="form-control" required placeholder="Full Name / Business">
             </div>
             <div class="form-group">
-                <label>Project Name *</label>
-                <input type="text" name="project_name" class="form-control" required placeholder="e.g. Website Development">
+                <label>Select Service *</label>
+                <select name="project_name" id="project_service_select" class="form-control" required onchange="updateCommissionRate(this)">
+                    <option value="" data-comm="0">-- Select Service --</option>
+                    <?php foreach($catalog as $svc): ?>
+                        <option value="<?= htmlspecialchars($svc['name']) ?>" data-comm="<?= $svc['commission_rate'] ?>"><?= htmlspecialchars($svc['name']) ?> (<?= $svc['commission_rate'] ?>%)</option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="form-group">
                 <label>Project Source</label>
@@ -284,7 +294,7 @@ $staff_members = $sp_stmt->fetchAll();
             <div class="form-row">
                 <div class="form-group" style="flex:1;">
                     <label>Commission Percentage (%) *</label>
-                    <input type="number" step="0.01" name="commission_percent" class="form-control" placeholder="e.g. 15.00" required>
+                    <input type="number" step="0.01" name="commission_percent" id="modal_comm_pct" class="form-control" placeholder="e.g. 15.00" required>
                 </div>
                 <div class="form-group" style="flex:1;">
                     <!-- Spacer for alignment if needed -->
@@ -326,6 +336,14 @@ $staff_members = $sp_stmt->fetchAll();
         </form>
     </div>
 </div>
+
+<script>
+function updateCommissionRate(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const commRate = selectedOption.getAttribute('data-comm');
+    document.getElementById('modal_comm_pct').value = commRate;
+}
+</script>
 
 </body>
 </html>

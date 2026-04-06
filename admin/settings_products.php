@@ -11,14 +11,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'create') {
+        // Security: Only HQ admin can manage the global catalog
+        $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+        $branch_info->execute([$cid]);
+        if (!$branch_info->fetchColumn()) { die("Access Denied: Only HQ Admin can manage the catalog."); }
+
         $name = trim($_POST['name'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
+        $comm = (float)($_POST['commission_rate'] ?? 0);
         
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("INSERT INTO products (company_id, name, price, description) VALUES (?, ?, ?, ?)");
-            if ($stmt->execute([$cid, $name, $price, $description])) {
-                $msg = "Service/Product created successfully."; $msgType = "success";
+            $stmt = $pdo->prepare("INSERT INTO settings_products (company_id, name, price, commission_rate, description) VALUES (?, ?, ?, ?, ?)");
+            if ($stmt->execute([$cid, $name, $price, $comm, $description])) {
+                $msg = "Service created successfully."; $msgType = "success";
             }
         }
     }
@@ -27,27 +33,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)$_POST['id'];
         $name = trim($_POST['name'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
+        $comm = (float)($_POST['commission_rate'] ?? 0);
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("UPDATE products SET name = ?, price = ?, description = ? WHERE id = ? AND company_id = ?");
-            if ($stmt->execute([$name, $price, $description, $id, $cid])) {
-                $msg = "Service/Product updated successfully."; $msgType = "success";
+            $stmt = $pdo->prepare("UPDATE settings_products SET name = ?, price = ?, commission_rate = ?, description = ? WHERE id = ? AND company_id = ?");
+            if ($stmt->execute([$name, $price, $comm, $description, $id, $cid])) {
+                $msg = "Service updated successfully."; $msgType = "success";
             }
         }
     }
 
     if ($action === 'delete') {
         $id = (int)$_POST['id'];
-        // Ensure no leads are tied to this exactly via ID (if we decide to enforce it, 
-        // but for now soft-delete mapping isn't strict, we just delete the listing).
-        $stmt = $pdo->prepare("DELETE FROM products WHERE id = ? AND company_id = ?");
+        $stmt = $pdo->prepare("DELETE FROM settings_products WHERE id = ? AND company_id = ?");
         if ($stmt->execute([$id, $cid])) {
-            $msg = "Service/Product deleted from catalog."; $msgType = "success";
+            $msg = "Service deleted from catalog."; $msgType = "success";
         }
     }
 }
 
-$stmt = $pdo->prepare("SELECT * FROM products WHERE company_id = ? ORDER BY name ASC");
+$stmt = $pdo->prepare("SELECT * FROM settings_products WHERE company_id = ? ORDER BY name ASC");
 $stmt->execute([$cid]);
 $products = $stmt->fetchAll();
 ?>
@@ -82,6 +87,7 @@ $products = $stmt->fetchAll();
                 <tr>
                     <th>Service Name</th>
                     <th>Base Price (₹)</th>
+                    <th>Commission (%)</th>
                     <th style="text-align:right">Actions</th>
                 </tr>
             </thead>
@@ -95,8 +101,9 @@ $products = $stmt->fetchAll();
                         <?php endif; ?>
                     </td>
                     <td style="color:#10b981; font-weight:600;">₹<?= number_format($p['price'], 2) ?></td>
+                    <td style="font-weight:700; color:#3b82f6;"><?= $p['commission_rate'] ?>%</td>
                     <td style="text-align:right">
-                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
+                        <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['commission_rate'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure?');">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= $p['id'] ?>">
@@ -131,6 +138,10 @@ $products = $stmt->fetchAll();
                 <input type="number" step="0.01" name="price" class="form-control" required>
             </div>
             <div class="form-group">
+                <label class="form-label">Default Commission (%)</label>
+                <input type="number" step="0.01" name="commission_rate" class="form-control" placeholder="e.g. 15.00" required>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Product Detail / Description</label>
                 <textarea name="description" class="form-control" rows="3" placeholder="Additional details about this product..."></textarea>
             </div>
@@ -156,6 +167,10 @@ $products = $stmt->fetchAll();
                 <input type="number" step="0.01" name="price" id="edit_price" class="form-control" required>
             </div>
             <div class="form-group">
+                <label class="form-label">Default Commission (%)</label>
+                <input type="number" step="0.01" name="commission_rate" id="edit_commission" class="form-control" required>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Product Detail / Description</label>
                 <textarea name="description" id="edit_description" class="form-control" rows="3"></textarea>
             </div>
@@ -165,10 +180,11 @@ $products = $stmt->fetchAll();
 </div>
 
 <script>
-function editP(id, name, price, desc) {
+function editP(id, name, price, comm, desc) {
     document.getElementById('edit_id').value = id;
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_price').value = price;
+    document.getElementById('edit_commission').value = comm;
     document.getElementById('edit_description').value = desc;
     document.getElementById('editModal').classList.add('open');
 }
