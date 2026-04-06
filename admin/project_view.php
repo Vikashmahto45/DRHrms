@@ -12,6 +12,7 @@ $pid = (int)($_GET['id'] ?? 0);
 $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
 $branch_info->execute([$cid]);
 $is_hq = (bool)$branch_info->fetchColumn();
+$is_hq_admin = ($is_hq && $_SESSION['user_role'] === 'admin');
 
 // Fetch Accessible Branches for hierarchy visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
@@ -78,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle Verification (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq_admin) {
     try {
         $adv = (float)$_POST['advance_paid'];
         $sp_id = (int)$_POST['sales_person_id'];
@@ -96,8 +97,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } catch (Exception $e) { $msg = $e->getMessage(); }
 }
 
+// Handle Rejection (HQ Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_project' && $is_hq_admin) {
+    try {
+        $reason = trim($_POST['reject_reason'] ?? 'No reason provided.');
+        $pdo->beginTransaction();
+        $pdo->prepare("UPDATE projects SET status = 'Cancelled', is_verified = 0 WHERE id = ?")->execute([$pid]);
+        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+            ->execute([$pid, $uid, "PROJECT REJECTED by HQ. Reason: $reason"]);
+        $pdo->commit();
+        header("Location: project_view.php?id=$pid&msg=Project Rejected"); exit();
+    } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); }
+}
+
 // Handle Project Edit (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $is_hq) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $is_hq_admin) {
     try {
         $pname = trim($_POST['project_name']);
         $client = trim($_POST['client_name']);
@@ -120,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle Project Delete (HQ Only)
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq) {
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq_admin) {
     try {
         $pdo->beginTransaction();
         $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
@@ -132,7 +146,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq) {
 
 // Fetch Staff for assignment dropdown (HQ view)
 $staff_members = [];
-if ($is_hq) {
+if ($is_hq_admin) {
     $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
     $sp_stmt->execute([$cid]);
     $staff_members = $sp_stmt->fetchAll();
@@ -176,7 +190,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
             </div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
-                <?php if ($is_hq): ?>
+                <?php if ($is_hq_admin): ?>
                     <button class="btn btn-sm btn-outline" style="border-color:#ef4444; color:#ef4444;" onclick="if(confirm('Are you sure you want to delete this project? All logs will be lost.')) window.location.href='project_view.php?id=<?= $pid ?>&action=delete'">Delete</button>
                 <?php endif; ?>
             </div>
@@ -192,7 +206,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 <div class="content-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                         <h3 style="margin:0;">Project Information</h3>
-                        <?php if ($is_hq): ?>
+                        <?php if ($is_hq_admin): ?>
                             <button class="btn btn-sm btn-outline" onclick="document.getElementById('editProjectModal').classList.add('open')">Edit Details</button>
                         <?php endif; ?>
                     </div>
@@ -263,7 +277,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
             <!-- Right: Action Form -->
             <div>
-                <?php if ($is_hq): ?>
+                <?php if ($is_hq_admin): ?>
                 <div class="content-card" style="border: 2px solid var(--primary-color); margin-bottom:1.5rem;">
                     <h3 style="color:var(--primary-color);">HQ Project Management</h3>
                     <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Confirm payment and assign staff for execution.</p>
@@ -286,6 +300,17 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                         <button type="submit" class="btn btn-primary" style="width:100%;">
                             <?= $p['status'] === 'Pending HQ Review' ? 'Verify & Start Project' : 'Update HQ Assignment' ?>
                         </button>
+                    </form>
+
+                    <!-- Reject Option -->
+                    <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #e2e8f0;">
+                    <form method="POST" onsubmit="return confirm('Are you sure you want to REJECT this project?');">
+                        <input type="hidden" name="action" value="reject_project">
+                        <div class="form-group">
+                            <label style="color:#ef4444;">Reject/Cancel Reason</label>
+                            <textarea name="reject_reason" class="form-control" rows="2" placeholder="e.g. Invalid payment proof..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-outline" style="width:100%; color:#ef4444; border-color:#ef4444;">Reject Project</button>
                     </form>
                 </div>
                 <?php endif; ?>
@@ -311,7 +336,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <?php endif; ?>
 
-                <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq)): ?>
+                <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq_admin)): ?>
                 <div class="content-card" style="margin-top:1.5rem;">
                     <h3>Update Progress</h3>
                     <form method="POST" style="margin-top:1rem;">
@@ -340,7 +365,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
     </main>
 </div>
 <!-- Edit Project Modal -->
-<?php if ($is_hq): ?>
+<?php if ($is_hq_admin): ?>
 <div class="modal-overlay" id="editProjectModal">
     <div class="modal-box" style="max-width:500px;">
         <button class="modal-close" onclick="this.closest('.modal-overlay').classList.remove('open')">&times;</button>
