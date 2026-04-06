@@ -304,7 +304,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
                     <!-- Reject Option -->
                     <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #e2e8f0;">
-                    <form method="POST" onsubmit="return confirm('Are you sure you want to REJECT this project?');">
+                    <form method="POST" id="reject_section" onsubmit="return confirm('Are you sure you want to REJECT this project?');">
                         <input type="hidden" name="action" value="reject_project">
                         <div class="form-group">
                             <label style="color:#ef4444;">Reject/Cancel Reason</label>

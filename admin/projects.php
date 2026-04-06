@@ -266,6 +266,7 @@ $catalog = $svc_stmt->fetchAll();
                     <div style="display:flex; gap:10px;">
                         <?php if ($p['status'] === 'Pending HQ Review' && $is_hq): ?>
                             <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary" style="background:#ef4444; border:none;">Verify & Assign HQ Staff</a>
+                            <a href="project_view.php?id=<?= $p['id'] ?>#reject_section" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:#ef4444;">Reject</a>
                         <?php else: ?>
                             <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary">View Details</a>
                         <?php endif; ?>
