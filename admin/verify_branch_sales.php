@@ -25,17 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
 
-            $stmt = $pdo->prepare("
-                SELECT p.*, c.commission_percentage 
-                FROM franchise_payments p 
-                JOIN companies c ON p.company_id = c.id 
-                WHERE p.id = ? AND p.status = 'pending'
-            ");
+            // 1. Get Payment & Project Commission
+            $stmt = $pdo->prepare("SELECT * FROM franchise_payments WHERE id = ?");
             $stmt->execute([$pid]);
             $pay = $stmt->fetch();
 
-            if ($pay) {
-                $commission = $pay['commission_percentage'] ?: 20.00;
+            if ($pay && $pay['status'] === 'pending') {
+                $commission = $pay['commission_percent'] !== null ? (float)$pay['commission_percent'] : 0.00;
+                
                 $admin_cut = $pay['amount'] * ($commission / 100);
                 $franchise_share = $pay['amount'] - $admin_cut;
 
@@ -68,10 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fetch Pending Sub-Branch Payments
 $stmt = $pdo->prepare("
-    SELECT p.*, c.name as company_name, pr.name as product_name 
+    SELECT p.*, c.name as company_name, pr.name as product_name, proj.project_name
     FROM franchise_payments p 
     JOIN companies c ON p.company_id = c.id 
     LEFT JOIN products pr ON p.product_id = pr.id
+    LEFT JOIN projects proj ON p.project_id = proj.id
     WHERE p.status = 'pending' AND c.is_main_branch = 0
     ORDER BY p.created_at DESC
 ");
@@ -83,7 +81,7 @@ $pendings = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Branch Sales (HQ) - DRHrms</title>
+    <title>Verify Branch Sales (HQ) - Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
@@ -140,8 +138,8 @@ $pendings = $stmt->fetchAll();
                         <div style="font-weight:700; color:#10b981; font-size:1.2rem;">₹<?= number_format($p['amount'], 2) ?></div>
                     </div>
                     <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted)">Service/Product</label>
-                        <div style="font-weight:600; color:#6366f1;"><?= htmlspecialchars($p['product_name'] ?? $p['category'] ?? 'General') ?></div>
+                        <label style="font-size:0.8rem; color:var(--text-muted)">Project / Deal</label>
+                        <div style="font-weight:600; color:#6366f1;"><?= htmlspecialchars($p['project_name'] ?? 'General') ?></div>
                     </div>
                     <div>
                         <label style="font-size:0.8rem; color:var(--text-muted)">Transaction Date</label>
