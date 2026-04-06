@@ -50,6 +50,15 @@ $my_tasks = $pdo->prepare("
 $my_tasks->execute([$uid, $cid]);
 $my_tasks = $my_tasks->fetchAll();
 
+// 4. My Assigned Projects
+$my_projects = $pdo->prepare("
+    SELECT * FROM projects 
+    WHERE sales_person_id = ? AND status NOT IN ('Completed', 'Cancelled') 
+    ORDER BY created_at DESC LIMIT 5
+");
+$my_projects->execute([$uid]);
+$my_projects = $my_projects->fetchAll();
+
 // Helper for source badges (Reusable from leads.php - ideally move to a shared helper later)
 function getSourceBadge($source) {
     $colors = [
@@ -159,6 +168,30 @@ $announcements = $ann_stmt->fetchAll();
                             <div style="text-align: right;">
                                 <div class="badge badge-<?= strtolower(str_replace(' ', '-', $l['status'])) ?>"><?= $l['status'] ?></div>
                                 <div style="margin-top: 8px;"><a href="lead_profile.php?id=<?= $l['id'] ?>" class="btn btn-sm btn-outline">Profile</a></div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="card-header">
+                    <h2>My Assigned Projects</h2>
+                </div>
+                <div class="projects-list">
+                    <?php if (empty($my_projects)): ?>
+                        <p style="padding: 2rem; text-align: center; color: var(--text-muted);">No active projects assigned to you yet.</p>
+                    <?php else: ?>
+                        <?php foreach ($my_projects as $p): ?>
+                        <div class="lead-item">
+                            <div class="lead-info">
+                                <h4><?= htmlspecialchars($p['client_name']) ?></h4>
+                                <p><?= htmlspecialchars($p['project_name']) ?> • Client: <?= htmlspecialchars($p['client_name']) ?></p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="badge badge-<?= strtolower(str_replace(' ', '-', $p['status'])) ?>"><?= htmlspecialchars($p['status']) ?></div>
+                                <div style="margin-top: 8px;"><a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-outline">View Order</a></div>
                             </div>
                         </div>
                         <?php endforeach; ?>
