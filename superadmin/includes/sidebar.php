@@ -30,6 +30,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="staff_performance.php" class="nav-item <?= $current_page === 'staff_performance.php' ? 'active' : '' ?>">
             <span class="nav-icon">🏆</span> Staff Leaderboard
         </a>
+        <a href="projects.php" class="nav-item <?= $current_page === 'projects.php' ? 'active' : '' ?>">
+            <span class="nav-icon">🏗️</span> Project Tracking
+        </a>
         <a href="attendance.php" class="nav-item <?= $current_page === 'attendance.php' ? 'active' : '' ?>">
             <span class="nav-icon">⏰</span> Attendance
         </a>
