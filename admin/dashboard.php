@@ -145,7 +145,6 @@ for ($i = 6; $i >= 0; $i--) {
 
     <div class="page-header">
         <div>
-            <div style="background:#000; color:#fff; padding:5px; margin-bottom:10px; font-size:12px; text-align:center;">SYSTEM UPDATED (CHECK) - V1</div>
             <h1><?= htmlspecialchars($company['name']) ?></h1>
             <p style="color:var(--text-muted)">Welcome back, <?= htmlspecialchars($_SESSION['user_name']) ?>. Plan: <strong style="color:var(--primary-color)"><?= $company['plan_name'] ?? 'Starter' ?></strong></p>
         </div>
