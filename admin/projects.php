@@ -57,6 +57,12 @@ try {
     $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'commission_percent'");
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN commission_percent DECIMAL(5,2) DEFAULT NULL AFTER total_value"); }
 
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'start_date'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN start_date DATE NULL AFTER updated_at"); }
+
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'end_date'");
+    if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN end_date DATE NULL AFTER start_date"); }
+
     // 2. Enum Update (Status)
     $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review'");
 
