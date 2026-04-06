@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("INSERT INTO settings_products (company_id, name, commission_rate, description) VALUES (?, ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO products (company_id, name, commission_rate, description) VALUES (?, ?, ?, ?)");
             if ($stmt->execute([$cid, $name, $comm, $description])) {
                 $msg = "Service created successfully."; $msgType = "success";
             }
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $comm = (float)($_POST['commission_rate'] ?? 0);
         if ($name) {
             $description = trim($_POST['description'] ?? '');
-            $stmt = $pdo->prepare("UPDATE settings_products SET name = ?, commission_rate = ?, description = ? WHERE id = ? AND company_id = ?");
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, commission_rate = ? , description = ? WHERE id = ? AND company_id = ?");
             if ($stmt->execute([$name, $comm, $description, $id, $cid])) {
                 $msg = "Service updated successfully."; $msgType = "success";
             }
@@ -53,14 +53,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'delete') {
         $id = (int)$_POST['id'];
-        $stmt = $pdo->prepare("DELETE FROM settings_products WHERE id = ? AND company_id = ?");
+        $stmt = $pdo->prepare("DELETE FROM products WHERE id = ? AND company_id = ?");
         if ($stmt->execute([$id, $cid])) {
-            $msg = "Service deleted from catalog."; $msgType = "success";
+            $msg = "Service deleted successfully."; $msgType = "success";
         }
     }
 }
 
-$stmt = $pdo->prepare("SELECT * FROM settings_products WHERE company_id = ? ORDER BY name ASC");
+$stmt = $pdo->prepare("SELECT * FROM products WHERE company_id = ? ORDER BY name ASC");
 $stmt->execute([$catalog_owner_id]);
 $products = $stmt->fetchAll();
 ?>

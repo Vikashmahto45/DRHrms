@@ -12,10 +12,11 @@ $role = $_SESSION['user_role'] ?? '';
 $branch_info = $pdo->prepare("SELECT is_main_branch, parent_id FROM companies WHERE id = ?");
 $branch_info->execute([$cid]);
 $comp_data = $branch_info->fetch();
-$is_hq = (bool)$comp_data['is_main_branch'];
+$is_hq = (bool)($comp_data['is_main_branch'] ?? false);
 $parent_id = $comp_data['parent_id'] ?? null;
 
 // Determine Catalog Owner (Sub-branches use their parent's catalog)
+// If current is HQ, use self. If sub-branch, use parent.
 $catalog_owner_id = ($is_hq || !$parent_id) ? $cid : $parent_id;
 
 // 0. Auto-patch for Projects Table
@@ -136,8 +137,8 @@ $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? 
 $sp_stmt->execute([$cid]);
 $staff_members = $sp_stmt->fetchAll();
 
-// Fetch Service Catalog
-$svc_stmt = $pdo->prepare("SELECT id, name, commission_rate FROM settings_products WHERE company_id = ? ORDER BY name ASC");
+// Fetch Service Catalog from Master HQ
+$svc_stmt = $pdo->prepare("SELECT id, name, commission_rate FROM products WHERE company_id = ? ORDER BY name ASC");
 $svc_stmt->execute([$catalog_owner_id]);
 $catalog = $svc_stmt->fetchAll();
 ?>
