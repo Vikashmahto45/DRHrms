@@ -10,13 +10,20 @@ checkAccess('super_admin');
 try {
     $stats = [];
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM companies WHERE is_main_branch = 1");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM companies WHERE is_main_branch = 1 AND status = 'active'");
     $stats['total_main_branches'] = $stmt->fetchColumn();
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM companies WHERE is_main_branch = 0");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM companies WHERE is_main_branch = 0 AND status = 'active'");
     $stats['total_sub_branches'] = $stmt->fetchColumn();
 
-    $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role IN ('staff','manager','sales_person') AND status = 'active'");
+    $stmt = $pdo->query("
+        SELECT COUNT(*) 
+        FROM users u 
+        INNER JOIN companies c ON u.company_id = c.id 
+        WHERE u.role IN ('staff','manager','sales_person') 
+          AND u.status = 'active' 
+          AND c.status = 'active'
+    ");
     $stats['total_users'] = $stmt->fetchColumn();
 
     $stmt = $pdo->query("SELECT COUNT(*) FROM demo_requests WHERE status = 'pending'");
