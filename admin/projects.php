@@ -322,8 +322,8 @@ $catalog = $svc_stmt->fetchAll();
             <?php endif; ?>
             <div class="form-row">
                 <div class="form-group" style="flex:1;">
-                    <label>Commission Percentage (%) *</label>
-                    <input type="number" step="0.01" name="commission_percent" id="modal_comm_pct" class="form-control" placeholder="e.g. 15.00" required>
+                    <label>Commission Percentage (%)</label>
+                    <input type="number" step="0.01" name="commission_percent" id="modal_comm_pct" class="form-control" style="background-color: #f1f5f9; cursor: not-allowed;" readonly placeholder="Fixed by HQ">
                 </div>
                 <div class="form-group" style="flex:1;">
                     <!-- Spacer for alignment if needed -->
