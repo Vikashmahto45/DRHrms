@@ -7,6 +7,11 @@ checkAccess('admin');
 $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
+// Check if current branch is HQ
+$is_hq_stmt = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
+$is_hq_stmt->execute([$cid]);
+$is_hq = (bool)$is_hq_stmt->fetchColumn();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -78,7 +83,9 @@ $products = $stmt->fetchAll();
             <h1>Services / Product Catalog</h1>
             <p style="color:var(--text-muted)">Define what your branch sells. Leads will drop-down into these options.</p>
         </div>
-        <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">+ Add Service</button>
+        <?php if ($is_hq): ?>
+            <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">+ Add Service</button>
+        <?php endif; ?>
     </div>
 
     <div class="content-card">
@@ -88,7 +95,7 @@ $products = $stmt->fetchAll();
                     <th>Service Name</th>
                     <th>Base Price (₹)</th>
                     <th>Commission (%)</th>
-                    <th style="text-align:right">Actions</th>
+                    <?php if ($is_hq): ?><th style="text-align:right">Actions</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -102,6 +109,7 @@ $products = $stmt->fetchAll();
                     </td>
                     <td style="color:#10b981; font-weight:600;">₹<?= number_format($p['price'], 2) ?></td>
                     <td style="font-weight:700; color:#3b82f6;"><?= $p['commission_rate'] ?>%</td>
+                    <?php if ($is_hq): ?>
                     <td style="text-align:right">
                         <button class="btn btn-outline btn-sm" onclick="editP(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', <?= $p['price'] ?>, <?= $p['commission_rate'] ?>, '<?= htmlspecialchars(addslashes($p['description'])) ?>')">Edit</button>
                         <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure?');">
@@ -110,6 +118,7 @@ $products = $stmt->fetchAll();
                             <button type="submit" class="btn btn-outline btn-sm" style="color:#ef4444; border-color:#ef4444;">Delete</button>
                         </form>
                     </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (empty($products)): ?>
