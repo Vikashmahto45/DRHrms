@@ -85,8 +85,10 @@ if ($cid > 0) {
                     <div class="nav-sub-menu">
                         <a href="<?= BASE_URL ?>admin/staff.php" class="nav-sub-item <?= $current_page==='staff.php'?'active':'' ?>">Manage Staff</a>
                         <a href="<?= BASE_URL ?>admin/leave_requests.php" class="nav-sub-item <?= $current_page==='leave_requests.php'?'active':'' ?>">Leave Requests</a>
-                        <a href="<?= BASE_URL ?>admin/attendance.php" class="nav-sub-item <?= $current_page==='attendance.php'?'active':'' ?>">Attendance</a>
+                        <a href="<?= BASE_URL ?>admin/attendance.php" class="nav-sub-item <?= $current_page==='attendance.php'?'active':'' ?>">Daily Attendance</a>
+                        <a href="<?= BASE_URL ?>admin/attendance_matrix.php" class="nav-sub-item <?= $current_page==='attendance_matrix.php'?'active':'' ?>">Attendance Matrix</a>
                         <a href="<?= BASE_URL ?>admin/attendance_report.php" class="nav-sub-item <?= $current_page==='attendance_report.php'?'active':'' ?>">Monthly Report</a>
+                        <a href="<?= BASE_URL ?>admin/holidays.php" class="nav-sub-item <?= $current_page==='holidays.php'?'active':'' ?>">Holidays</a>
                         <a href="<?= BASE_URL ?>admin/shifts.php" class="nav-sub-item <?= $current_page==='shifts.php'?'active':'' ?>">Shifts</a>
                         <a href="<?= BASE_URL ?>admin/attendance_settings.php" class="nav-sub-item <?= $current_page==='attendance_settings.php'?'active':'' ?>">Security</a>
                     </div>

@@ -29,23 +29,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     }
 }
 
-// 1. Global Summaries
-$sql = "SELECT SUM(amount) as global_sales, SUM(admin_cut) as total_commissions, SUM(franchise_share) as total_franchise_payouts, COUNT(id) as total_transactions FROM franchise_payments WHERE status = 'approved'";
+// 1. Global Summaries (Approved vs Gross)
+$sql = "SELECT 
+    SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END) as global_sales, 
+    SUM(amount) as gross_sales,
+    SUM(CASE WHEN status = 'approved' THEN admin_cut ELSE 0 END) as total_commissions, 
+    SUM(CASE WHEN status = 'approved' THEN franchise_share ELSE 0 END) as total_franchise_payouts, 
+    COUNT(id) as total_transactions 
+FROM franchise_payments";
 if ($cids_in !== 'all') {
-    $sql .= " AND company_id IN ($cids_in)";
+    $sql .= " WHERE company_id IN ($cids_in)";
 }
 $totals = $pdo->query($sql)->fetch();
 
-// 2. Performance by Company (Using LEFT JOIN to show records from deleted companies)
-$sql2 = "SELECT COALESCE(c.name, 'Deleted Account / Orphan') as company_name, SUM(p.amount) as total_generated, SUM(p.admin_cut) as commission_earned, COUNT(p.id) as approved_count FROM franchise_payments p LEFT JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved'";
+// 2. Performance by Company
+$sql2 = "SELECT 
+    COALESCE(c.name, 'Deleted Account / Orphan') as company_name, 
+    SUM(CASE WHEN p.status = 'approved' THEN p.amount ELSE 0 END) as total_generated, 
+    SUM(p.amount) as gross_generated,
+    SUM(CASE WHEN p.status = 'approved' THEN p.admin_cut ELSE 0 END) as commission_earned, 
+    COUNT(p.id) as total_count 
+FROM franchise_payments p 
+LEFT JOIN companies c ON p.company_id = c.id";
 if ($cids_in !== 'all') {
-    $sql2 .= " AND p.company_id IN ($cids_in)";
+    $sql2 .= " WHERE p.company_id IN ($cids_in)";
 }
 $sql2 .= " GROUP BY p.company_id ORDER BY total_generated DESC";
 $company_performance = $pdo->query($sql2)->fetchAll();
 
-// 3. Recent Raw Transactions (To see exactly what's making up the numbers)
-$sql3 = "SELECT p.*, COALESCE(c.name, 'Unknown Vendor') as company_name FROM franchise_payments p LEFT JOIN companies c ON p.company_id = c.id WHERE p.status = 'approved' ORDER BY p.id DESC LIMIT 50";
+// 3. Recent Raw Transactions
+$sql3 = "SELECT p.*, COALESCE(c.name, 'Unknown Vendor') as company_name FROM franchise_payments p LEFT JOIN companies c ON p.company_id = c.id ORDER BY p.id DESC LIMIT 50";
 $all_transactions = $pdo->query($sql3)->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -85,22 +98,22 @@ if ($role === 'super_admin') {
         <div class="banner-card">
             <span class="banner-label">Platform Gross Sale</span>
             <div class="banner-val">₹<?= number_format($totals['global_sales'] ?: 0, 0) ?></div>
-            <p style="color:#10b981; font-size:0.8rem;">↑ Total Volume</p>
+            <p style="color:#10b981; font-size:0.8rem;">Gross Volume: ₹<?= number_format($totals['gross_sales'] ?: 0, 0) ?></p>
         </div>
         <div class="banner-card" style="border-top: 5px solid var(--primary-color);">
             <span class="banner-label">Super Admin Profit</span>
             <div class="banner-val" style="color:var(--primary-color);">₹<?= number_format($totals['total_commissions'] ?: 0, 0) ?></div>
-            <p style="color:var(--text-muted); font-size:0.8rem;">Total Commissions</p>
+            <p style="color:var(--text-muted); font-size:0.8rem;">From Approved Payments</p>
         </div>
         <div class="banner-card">
             <span class="banner-label">Franchise Earnings</span>
             <div class="banner-val">₹<?= number_format($totals['total_franchise_payouts'] ?: 0, 0) ?></div>
-            <p style="color:var(--text-muted); font-size:0.8rem;">Paid to Partners</p>
+            <p style="color:var(--text-muted); font-size:0.8rem;">Commission Payouts</p>
         </div>
         <div class="banner-card">
-            <span class="banner-label">Settled Assets</span>
+            <span class="banner-label">System Activity</span>
             <div class="banner-val"><?= $totals['total_transactions'] ?: 0 ?></div>
-            <p style="color:var(--text-muted); font-size:0.8rem;">Approved Records</p>
+            <p style="color:var(--text-muted); font-size:0.8rem;">Total Entries (All statuses)</p>
         </div>
     </div>
 
@@ -118,9 +131,12 @@ if ($role === 'super_admin') {
                     <td>
                         <strong><?= htmlspecialchars($cp['company_name']) ?></strong>
                     </td>
-                    <td style="font-weight:600;">₹<?= number_format($cp['total_generated'], 2) ?></td>
+                    <td style="font-weight:600;">
+                        ₹<?= number_format($cp['total_generated'], 2) ?>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Gross: ₹<?= number_format($cp['gross_generated'], 2) ?></div>
+                    </td>
                     <td style="color:var(--primary-color); font-weight:600;">₹<?= number_format($cp['commission_earned'], 2) ?></td>
-                    <td><?= $cp['approved_count'] ?></td>
+                    <td><?= $cp['total_count'] ?></td>
                     <td><span class="badge" style="background:#f1f5f9; color:#1e293b;">#<?= $rank++ ?></span></td>
                 </tr>
                 <?php endforeach; ?>

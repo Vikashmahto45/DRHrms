@@ -42,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $ifsc = trim($_POST['ifsc_code'] ?? '');
     $p_addr = trim($_POST['permanent_address'] ?? '');
     $c_addr = trim($_POST['current_address'] ?? '');
+    $shift_id = !empty($_POST['shift_id']) ? (int)$_POST['shift_id'] : null;
 
     try {
         $pdo->beginTransaction();
@@ -59,8 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         // 2. Update Users Table
-        $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, profile_image = ? WHERE id = ? AND company_id = ?");
-        $stmt->execute([$name, $email, $img_path, $user_id, $cid]);
+        $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, profile_image = ?, shift_id = ? WHERE id = ? AND company_id = ?");
+        $stmt->execute([$name, $email, $img_path, $shift_id, $user_id, $cid]);
 
         // 3. Update Employee Details (Upsert style)
         $stmt = $pdo->prepare("SELECT id FROM employee_details WHERE user_id = ?");
@@ -108,6 +109,11 @@ foreach($leaves as $l) {
     if($l['status'] === 'pending') $stats['pending']++;
     if($l['status'] === 'approved') $stats['approved']++;
 }
+
+// 4. Fetch Shifts for dropdown
+$shifts = $pdo->prepare("SELECT id, name, start_time, end_time FROM shifts WHERE company_id = ?");
+$shifts->execute([$cid]);
+$shifts = $shifts->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -348,6 +354,17 @@ foreach($leaves as $l) {
                 <div class="form-group">
                     <label>Profile Picture</label>
                     <input type="file" name="profile_image" class="form-control" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label>Work Shift</label>
+                    <select name="shift_id" class="form-control">
+                        <option value="">-- No Shift Assigned --</option>
+                        <?php foreach($shifts as $sh): ?>
+                            <option value="<?= $sh['id'] ?>" <?= ($staff['shift_id'] == $sh['id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($sh['name']) ?> (<?= date('h:i A', strtotime($sh['start_time'])) ?> - <?= date('h:i A', strtotime($sh['end_time'])) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 

@@ -29,7 +29,7 @@ try {
     if ($action === 'in') {
         // 1. IP Check
         if ($config['allowed_ip'] && $config['allowed_ip'] !== $_SERVER['REMOTE_ADDR']) {
-            throw new Exception("Security breach: Attendance must be from office network. (Detected IP: {$_SERVER['REMOTE_ADDR']})");
+            throw new Exception("Security breach: Attendance must be from office network.");
         }
 
         // 2. Location Check
@@ -39,32 +39,51 @@ try {
             $dist = calculateDistance($uLat, $uLng, $config['office_lat'], $config['office_lng']);
             if ($dist > $config['radius_meters']) {
                 $roundedDist = round($dist);
-                throw new Exception("Out of bounds: You are {$roundedDist}m away. Must be within {$config['radius_meters']}m.");
+                throw new Exception("Out of bounds: You are {$roundedDist}m away.");
             }
         }
 
-        // 3. Save Selfie
-        $photoData = $_POST['photo'] ?? '';
-        $fileName = "";
-        if ($photoData) {
-            $photoData = str_replace('data:image/jpeg;base64,', '', $photoData);
-            $photoData = str_replace(' ', '+', $photoData);
-            $img = base64_decode($photoData);
-            $dir = "../../uploads/attendance_photos/";
-            if (!is_dir($dir)) mkdir($dir, 0777, true);
-            $fileName = "selfie_{$uid}_" . time() . ".jpg";
-            file_put_contents($dir . $fileName, $img);
+        // 3. Late Calculation
+        $late_mins = 0;
+        $status = 'Present';
+        $user_shift = $pdo->prepare("SELECT s.start_time FROM users u JOIN shifts s ON u.shift_id = s.id WHERE u.id = ?");
+        $user_shift->execute([$uid]);
+        $shift = $user_shift->fetch();
+
+        if ($shift) {
+            $now_time = date('H:i:s');
+            $shift_start = $shift['start_time'];
+            $diff = (strtotime($now_time) - strtotime($shift_start)) / 60;
+            if ($diff > 15) { // 15 mins grace
+                $late_mins = round($diff);
+                $status = 'Late';
+            }
         }
 
         // 4. Save Record
-        $stmt = $pdo->prepare("INSERT INTO attendance (company_id, user_id, date, clock_in, lat, lng, ip_address, photo_path) VALUES (?,?,CURDATE(),CURTIME(),?,?,?,?)");
-        $stmt->execute([$cid, $uid, $uLat, $uLng, $_SERVER['REMOTE_ADDR'], $fileName]);
+        $stmt = $pdo->prepare("INSERT INTO attendance (company_id, user_id, date, clock_in, lat, lng, ip_address, late_minutes, status) VALUES (?,?,CURDATE(),CURTIME(),?,?,?,?,?)");
+        $stmt->execute([$cid, $uid, $uLat, $uLng, $_SERVER['REMOTE_ADDR'], $late_mins, $status]);
         
         echo json_encode(['success' => true]);
     } 
     elseif ($action === 'out') {
-        $stmt = $pdo->prepare("UPDATE attendance SET clock_out = CURTIME() WHERE user_id = ? AND date = CURDATE() AND clock_out IS NULL");
-        $stmt->execute([$uid]);
+        // Calculate Overtime
+        $overtime_mins = 0;
+        $user_shift = $pdo->prepare("SELECT s.end_time FROM users u JOIN shifts s ON u.shift_id = s.id WHERE u.id = ?");
+        $user_shift->execute([$uid]);
+        $shift = $user_shift->fetch();
+
+        if ($shift) {
+            $now_time = date('H:i:s');
+            $shift_end = $shift['end_time'];
+            $diff = (strtotime($now_time) - strtotime($shift_end)) / 60;
+            if ($diff > 0) {
+                $overtime_mins = round($diff);
+            }
+        }
+
+        $stmt = $pdo->prepare("UPDATE attendance SET clock_out = CURTIME(), overtime_minutes = ? WHERE user_id = ? AND date = CURDATE() AND clock_out IS NULL");
+        $stmt->execute([$overtime_mins, $uid]);
         echo json_encode(['success' => true]);
     }
 } catch (Exception $e) {

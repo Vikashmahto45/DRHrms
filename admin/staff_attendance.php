@@ -59,8 +59,6 @@ function getDuration($in, $out) {
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
     <style>
         .attendance-card { max-width: 500px; margin: 0 auto 2rem auto; text-align: center; padding: 3rem 2rem; }
-        #camera-preview { width: 100%; max-width: 320px; height: 240px; background: #000; border-radius: 12px; margin: 1.5rem auto; display: none; object-fit: cover; }
-        #captured-photo { width: 100%; max-width: 320px; border-radius: 12px; margin: 1.5rem auto; display: none; }
         .status-online { background: #10b981; box-shadow: 0 0 10px #10b981; }
         .status-offline { background: #6b7280; }
     </style>
@@ -103,14 +101,8 @@ function getDuration($in, $out) {
                         <div id="ip-status" style="font-size: 0.85rem;">🌐 Checking Network...</div>
                     </div>
 
-                    <video id="camera-preview" autoplay playsinline></video>
-                    <canvas id="photo-canvas" style="display:none;"></canvas>
-                    <img id="captured-photo" src="">
-
                     <div id="action-buttons" style="margin-top: 1.5rem;">
-                        <button id="btn-selfie" class="btn btn-outline" style="width: 100%; margin-bottom: 1rem;" onclick="startCamera()">🤳 Take Selfie to Start</button>
-                        <button id="btn-snap" class="btn btn-primary" style="width: 100%; display:none;" onclick="takeSnapshot()">📸 Capture & Clock In</button>
-                        <button id="btn-clockin" class="btn btn-primary" style="width: 100%; display:none;" onclick="handleClockAction('in')">Confirm Clock In</button>
+                        <button id="btn-clockin" class="btn btn-primary" style="width: 100%;" onclick="handleClockAction('in')">Confirm Clock In</button>
                     </div>
                 <?php endif; ?>
             </div>
@@ -189,37 +181,8 @@ setInterval(() => {
     if(clock) clock.textContent = new Date().toLocaleTimeString();
 }, 1000);
 
-let stream;
-let photoData = null;
+let photoData = null; // No longer used but kept for API stability if needed as null
 let userCoords = null;
-
-async function startCamera() {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById('camera-preview');
-        video.srcObject = stream;
-        video.style.display = 'block';
-        document.getElementById('btn-selfie').style.display = 'none';
-        document.getElementById('btn-snap').style.display = 'block';
-    } catch (err) {
-        alert("Camera access denied. Camera is required for attendance.");
-    }
-}
-
-function takeSnapshot() {
-    const video = document.getElementById('camera-preview');
-    const canvas = document.getElementById('photo-canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0);
-    photoData = canvas.toDataURL('image/jpeg');
-    document.getElementById('captured-photo').src = photoData;
-    document.getElementById('captured-photo').style.display = 'block';
-    video.style.display = 'none';
-    stream.getTracks().forEach(track => track.stop());
-    document.getElementById('btn-snap').style.display = 'none';
-    document.getElementById('btn-clockin').style.display = 'block';
-}
 
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -248,7 +211,6 @@ async function handleClockAction(type) {
     const formData = new FormData();
     formData.append('action', type);
     if (type === 'in') {
-        if (!photoData) return alert("Photo is required.");
         if (!userCoords) return alert("Location is required.");
         formData.append('photo', photoData);
         formData.append('lat', userCoords.lat);
