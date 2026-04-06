@@ -57,7 +57,51 @@ CREATE TABLE IF NOT EXISTS attendance (
     clock_in DATETIME DEFAULT NULL,
     clock_out DATETIME DEFAULT NULL,
     FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- Table: projects (Execution Tracker)
+CREATE TABLE IF NOT EXISTS projects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT NOT NULL,
+    branch_id INT NULL,
+    sales_person_id INT NULL,
+    client_name VARCHAR(255) NOT NULL,
+    project_name VARCHAR(255) NOT NULL,
+    commission_percent DECIMAL(5,2) DEFAULT NULL,
+    source VARCHAR(100) DEFAULT 'Walk-in',
+    total_value DECIMAL(15,2) DEFAULT 0.00,
+    advance_paid DECIMAL(15,2) DEFAULT 0.00,
+    status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review',
+    progress_pct INT DEFAULT 0,
+    is_verified TINYINT(1) DEFAULT 0,
+    verified_by INT NULL,
+    custom_sales_name VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+-- Table: franchise_payments (Revenue Split)
+CREATE TABLE IF NOT EXISTS franchise_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT NOT NULL,
+    project_id INT DEFAULT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    commission_percent DECIMAL(5,2) DEFAULT NULL,
+    client_name VARCHAR(255) NOT NULL,
+    product_id INT DEFAULT NULL,
+    category VARCHAR(100) NOT NULL,
+    payment_date DATE NOT NULL,
+    proof_file VARCHAR(255) NOT NULL,
+    admin_cut DECIMAL(15,2) DEFAULT NULL,
+    franchise_share DECIMAL(15,2) DEFAULT NULL,
+    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    rejection_reason TEXT DEFAULT NULL,
+    approved_by INT DEFAULT NULL,
+    approved_at DATETIME DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payout_status ENUM('pending', 'paid') DEFAULT 'pending',
+    payout_date DATETIME DEFAULT NULL,
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
 );
 
 -- Seed Data: Create Default Super Admin (Password is 'password')

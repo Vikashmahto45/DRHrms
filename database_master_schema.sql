@@ -224,8 +224,11 @@ DROP TABLE IF EXISTS `franchise_payments`;
 CREATE TABLE `franchise_payments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `company_id` int(11) NOT NULL,
+  `project_id` int(11) DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
+  `commission_percent` decimal(5,2) DEFAULT NULL,
   `client_name` varchar(255) NOT NULL,
+  `product_id` int(11) DEFAULT NULL,
   `category` varchar(100) NOT NULL,
   `payment_date` date NOT NULL,
   `proof_file` varchar(255) NOT NULL,
@@ -512,6 +515,31 @@ CREATE TABLE `webhooks_inbound` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+--
+-- Table structure for table `projects`
+--
+
+DROP TABLE IF EXISTS `projects`;
+CREATE TABLE `projects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `company_id` int(11) NOT NULL,
+  `branch_id` int(11) DEFAULT NULL,
+  `sales_person_id` int(11) DEFAULT NULL,
+  `client_name` varchar(255) NOT NULL,
+  `project_name` varchar(255) NOT NULL,
+  `commission_percent` decimal(5,2) DEFAULT NULL,
+  `source` varchar(100) DEFAULT 'Walk-in',
+  `total_value` decimal(15,2) DEFAULT 0.00,
+  `advance_paid` decimal(15,2) DEFAULT 0.00,
+  `status` enum('Pending Approval','Active','On Hold','Completed','Cancelled','Pending HQ Review') DEFAULT 'Pending HQ Review',
+  `progress_pct` int(11) DEFAULT 0,
+  `is_verified` tinyint(1) DEFAULT 0,
+  `verified_by` int(11) DEFAULT NULL,
+  `custom_sales_name` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
