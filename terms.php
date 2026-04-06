@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terms of Service - DRHrms</title>
+    <title>Terms of Service - Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/landing.css">
     <style>
@@ -23,7 +23,7 @@
     <!-- Navigation -->
     <nav class="scrolled">
         <div class="container nav-container">
-            <a href="index.php" class="logo">DR<span>Hrms</span></a>
+            <a href="index.php" class="logo">Loom</a>
             <ul class="nav-links">
                 <li><a href="index.php#features">Platform Features</a></li>
                 <li><a href="how-it-works.php">How It Works</a></li>
@@ -44,13 +44,13 @@
 
         <div class="glass-panel legal-content" style="max-width: 800px; margin: 0 auto; padding: 3rem;">
             <h2>1. Acceptance of Terms</h2>
-            <p>By accessing and using DRHrms ("the Platform"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by these terms, you are not authorized to use or access the Platform.</p>
+            <p>By accessing and using Loom ("the Platform"), you accept and agree to be bound by the terms and provisions of this agreement. If you do not agree to abide by these terms, you are not authorized to use or access the Platform.</p>
 
             <h2>2. Platform Access and Security</h2>
             <p>You are responsible for maintaining the confidentiality of your master credentials and passwords. You agree to accept responsibility for all activities that occur under your account, including activities conducted by sub-branches created under your hierarchy.</p>
 
             <h2>3. Multi-Tenant Infrastructure</h2>
-            <p>The Platform provides SaaS capabilities that allow users to generate downstream tenants (sub-branches). You retain ownership of all data inputted into your tenant instance; however, you grant DRHrms permission to host, backup, and structure that data.</p>
+            <p>The Platform provides SaaS capabilities that allow users to generate downstream tenants (sub-branches). You retain ownership of all data inputted into your tenant instance; however, you grant Loom permission to host, backup, and structure that data.</p>
 
             <h2>4. Acceptable Use Policy</h2>
             <p>You must not use the Platform to:</p>
@@ -61,7 +61,7 @@
             </ul>
 
             <h2>5. Limitation of Liability</h2>
-            <p>DRHrms shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use the Platform, including but not limited to damages for loss of profits, data, or other tangibles.</p>
+            <p>Loom shall not be liable for any indirect, incidental, special, or consequential damages resulting from the use or inability to use the Platform, including but not limited to damages for loss of profits, data, or other tangibles.</p>
 
             <h2>6. Termination</h2>
             <p>We reserve the right to suspend or terminate your access to the Platform immediately if we determine that you have breached these Terms, without prior notice or liability.</p>
@@ -73,7 +73,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div>
-                    <div class="footer-logo">DR<span>Hrms</span></div>
+                    <div class="footer-logo">Loom</div>
                     <p style="color:var(--text-muted); line-height:1.6; max-width:300px;">The premier administrative layer for managing scalable organizations across the globe.</p>
                 </div>
                 <div>
@@ -89,12 +89,12 @@
                     <ul class="footer-links">
                         <li><a href="privacy.php">Privacy Policy</a></li>
                         <li><a href="terms.php" style="color:#fff;">Terms of Service</a></li>
-                        <li><a href="mailto:support@drhrms.com">support@drhrms.com</a></li>
+                        <li><a href="mailto:support@loom.com">support@loom.com</a></li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; <?= date('Y') ?> DRHrms Technologies. Built for Excellence.
+                &copy; <?= date('Y') ?> Loom Technologies. Built for Excellence.
             </div>
         </div>
     </footer>

@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['user_submit'])) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= $company_info ? htmlspecialchars($company_info['name']) . ' — Login' : 'DRHrms Login' ?></title>
+<title><?= $company_info ? htmlspecialchars($company_info['name']) . ' — Login' : 'Loom Login' ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -179,7 +179,7 @@ input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);backg
 <body>
 <div class="wrap">
   <div class="brand">
-    <div class="logo">DR<span>Hrms</span></div>
+    <div class="logo">Loom</div>
     <?php if ($company_info): ?>
       <div class="badge">🏢 <?= htmlspecialchars($company_info['name']) ?></div>
     <?php elseif ($is_hq_page): ?>
@@ -217,7 +217,7 @@ input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);backg
       <?php if ($sa_error): ?><div class="err">⚠️ <?= htmlspecialchars($sa_error) ?></div><?php endif; ?>
       <form method="POST">
         <input type="hidden" name="sa_submit" value="1">
-        <div class="fg"><label>Email</label><input type="email" name="sa_email" required placeholder="superadmin@drhrms.com" value="<?= htmlspecialchars($_POST['sa_email']??'') ?>"></div>
+        <div class="fg"><label>Email</label><input type="email" name="sa_email" required placeholder="superadmin@loom.com" value="<?= htmlspecialchars($_POST['sa_email']??'') ?>"></div>
         <div class="fg"><label>Password</label><div class="pw"><input type="password" name="sa_password" id="sp" required placeholder="••••••••"><button type="button" class="eye" style="color:#ec4899" onclick="tp('sp',this)">👁️</button></div></div>
         <button type="submit" class="btn btn-sa">Enter Command Center →</button>
       </form>
@@ -239,7 +239,7 @@ input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12);backg
 
   </div><!-- /.card -->
 
-  <div class="hint">DRHrms Platform — All access is monitored and logged.</div>
+  <div class="hint">Loom Platform — All access is monitored and logged.</div>
 </div>
 
 <script>

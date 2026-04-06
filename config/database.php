@@ -9,7 +9,7 @@ $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVE
 // 2. Define Global Base URL
 if (!defined('BASE_URL')) {
     if ($is_local) {
-        define('BASE_URL', $protocol . $domain . '/DR Hrms/');
+        define('BASE_URL', $protocol . $domain . '/Loom/');
     } else {
         // Change this if your agency installs it in a subfolder like yourdomain.com/erp/
         define('BASE_URL', $protocol . $domain . '/');

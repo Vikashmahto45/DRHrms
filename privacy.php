@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy - DRHrms</title>
+    <title>Privacy Policy - Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/landing.css">
     <style>
@@ -23,7 +23,7 @@
     <!-- Navigation -->
     <nav class="scrolled">
         <div class="container nav-container">
-            <a href="index.php" class="logo">DR<span>Hrms</span></a>
+            <a href="index.php" class="logo">Loom</a>
             <ul class="nav-links">
                 <li><a href="index.php#features">Platform Features</a></li>
                 <li><a href="how-it-works.php">How It Works</a></li>
@@ -44,7 +44,7 @@
 
         <div class="glass-panel legal-content" style="max-width: 800px; margin: 0 auto; padding: 3rem;">
             <h2>1. Information We Collect</h2>
-            <p>We collect information that you directly provide us when utilizing DRHrms. This includes:</p>
+            <p>We collect information that you directly provide us when utilizing Loom. This includes:</p>
             <ul>
                 <li>Account and profile information (Name, Email, Phone Number).</li>
                 <li>Geolocation data securely collected during employee Clock-In and Check-In processes.</li>
@@ -55,20 +55,20 @@
             <h2>2. How We Use Your Data</h2>
             <p>Your data is processed in a multi-tenant, isolated database environment. We use this data to:</p>
             <ul>
-                <li>Provide, maintain, and improve the DRHrms platform.</li>
+                <li>Provide, maintain, and improve the Loom platform.</li>
                 <li>Process attendance, leaves, and CRM lead movements for your organization.</li>
                 <li>Calculate and display analytics in your Super Admin dashboard.</li>
                 <li>Send critical technical notices and security alerts.</li>
             </ul>
 
             <h2>3. Secure Data Isolation</h2>
-            <p>Because DRHrms serves multiple independent franchises and headquarters, we enforce strict Company ID isolation at the database layer. Cross-tenant data bleeds are mathematically impossible within our query structures.</p>
+            <p>Because Loom serves multiple independent franchises and headquarters, we enforce strict Company ID isolation at the database layer. Cross-tenant data bleeds are mathematically impossible within our query structures.</p>
 
             <h2>4. Third-Party Sharing</h2>
-            <p>We do not sell, rent, or lease your organizational data to third parties. Data is only shared with trusted cloud hosting providers specifically contracted to maintain the infrastructure of DRHrms.</p>
+            <p>We do not sell, rent, or lease your organizational data to third parties. Data is only shared with trusted cloud hosting providers specifically contracted to maintain the infrastructure of Loom.</p>
 
             <h2>5. Contact Us</h2>
-            <p>If you have questions regarding this Privacy Policy or your data, please contact us at <a href="mailto:support@drhrms.com" style="color:var(--primary);">support@drhrms.com</a>.</p>
+            <p>If you have questions regarding this Privacy Policy or your data, please contact us at <a href="mailto:support@loom.com" style="color:var(--primary);">support@loom.com</a>.</p>
         </div>
     </main>
 
@@ -77,7 +77,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div>
-                    <div class="footer-logo">DR<span>Hrms</span></div>
+                    <div class="footer-logo">Loom</div>
                     <p style="color:var(--text-muted); line-height:1.6; max-width:300px;">The premier administrative layer for managing scalable organizations across the globe.</p>
                 </div>
                 <div>
@@ -93,12 +93,12 @@
                     <ul class="footer-links">
                         <li><a href="privacy.php" style="color:#fff;">Privacy Policy</a></li>
                         <li><a href="terms.php">Terms of Service</a></li>
-                        <li><a href="mailto:support@drhrms.com">support@drhrms.com</a></li>
+                        <li><a href="mailto:support@loom.com">support@loom.com</a></li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; <?= date('Y') ?> DRHrms Technologies. Built for Excellence.
+                &copy; <?= date('Y') ?> Loom Technologies. Built for Excellence.
             </div>
         </div>
     </footer>

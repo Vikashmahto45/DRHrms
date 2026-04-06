@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DRHrms - State of the Art HR & CRM SaaS</title>
+    <title>Loom - State of the Art HR & CRM SaaS</title>
     <meta name="description" content="The ultimate Multi-Tenant HRMS and Lead Management SaaS for modern agencies and enterprises.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Using our new standalone premium landing page styling with cache busting -->
@@ -29,7 +29,7 @@
     <!-- Navigation -->
     <nav>
         <div class="container nav-container">
-            <a href="/" class="logo">DR<span>Hrms</span></a>
+            <a href="/" class="logo">Loom</a>
             <ul class="nav-links">
                 <li><a href="#features">Platform Features</a></li>
                 <li><a href="how-it-works.php">How It Works</a></li>
@@ -117,7 +117,7 @@
                 <div>
                     <h2 style="font-size: 3rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem;">Ready to upgrade your workflow?</h2>
                     <p style="font-size: 1.15rem; color: var(--text-muted); margin-bottom: 2rem; line-height: 1.8;">
-                        Experience DRHrms with no upfront commitment. Submit your request and our concierge team will manually verify your business and provision a master dashboard. 
+                        Experience Loom with no upfront commitment. Submit your request and our concierge team will manually verify your business and provision a master dashboard. 
                         <strong>We handle the heavy lifting.</strong>
                     </p>
                     <ul style="list-style:none; display:flex; flex-direction:column; gap:1rem;">
@@ -176,7 +176,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div>
-                    <div class="footer-logo">DR<span>Hrms</span></div>
+                    <div class="footer-logo">Loom</div>
                     <p style="color:var(--text-muted); line-height:1.6; max-width:300px;">The premier administrative layer for managing scalable organizations across the globe.</p>
                 </div>
                 <div>
@@ -192,12 +192,12 @@
                     <ul class="footer-links">
                         <li><a href="privacy.php">Privacy Policy</a></li>
                         <li><a href="terms.php">Terms of Service</a></li>
-                        <li><a href="mailto:support@drhrms.com">support@drhrms.com</a></li>
+                        <li><a href="mailto:support@loom.com">support@loom.com</a></li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; <?= date('Y') ?> DRHrms Technologies. Built for Excellence.
+                &copy; <?= date('Y') ?> Loom Technologies. Built for Excellence.
             </div>
         </div>
     </footer>

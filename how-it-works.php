@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How It Works - DRHrms</title>
+    <title>How It Works - Loom</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/landing.css">
 </head>
@@ -18,7 +18,7 @@
     <!-- Navigation -->
     <nav class="scrolled">
         <div class="container nav-container">
-            <a href="index.php" class="logo">DR<span>Hrms</span></a>
+            <a href="index.php" class="logo">Loom</a>
             <ul class="nav-links">
                 <li><a href="index.php#features">Platform Features</a></li>
                 <li><a href="how-it-works.php" style="color:#fff;">How It Works</a></li>
@@ -34,7 +34,7 @@
     <main class="container" style="padding-top: 150px; padding-bottom: 100px; min-height: 80vh;">
         <div style="max-width: 800px; margin: 0 auto; text-align: center; margin-bottom: 4rem;">
             <div class="badge-pill">The Process</div>
-            <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 1.5rem; line-height: 1.1;">How <span class="text-gradient">DRHrms</span> Works</h1>
+            <h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 1.5rem; line-height: 1.1;">How <span class="text-gradient">Loom</span> Works</h1>
             <p style="font-size: 1.25rem; color: var(--text-muted); line-height: 1.8;">We believe in white-glove onboarding. Instead of leaving you to figure out complex settings alone, our team sets up your master enterprise architecture for you.</p>
         </div>
 
@@ -70,7 +70,7 @@
         <div class="container">
             <div class="footer-grid">
                 <div>
-                    <div class="footer-logo">DR<span>Hrms</span></div>
+                    <div class="footer-logo">Loom</div>
                     <p style="color:var(--text-muted); line-height:1.6; max-width:300px;">The premier administrative layer for managing scalable organizations across the globe.</p>
                 </div>
                 <div>
@@ -86,12 +86,12 @@
                     <ul class="footer-links">
                         <li><a href="privacy.php">Privacy Policy</a></li>
                         <li><a href="terms.php">Terms of Service</a></li>
-                        <li><a href="mailto:support@drhrms.com">support@drhrms.com</a></li>
+                        <li><a href="mailto:support@loom.com">support@loom.com</a></li>
                     </ul>
                 </div>
             </div>
             <div class="copyright">
-                &copy; <?= date('Y') ?> DRHrms Technologies. Built for Excellence.
+                &copy; <?= date('Y') ?> Loom Technologies. Built for Excellence.
             </div>
         </div>
     </footer>
