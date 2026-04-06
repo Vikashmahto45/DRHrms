@@ -116,6 +116,7 @@ if ($cid > 0) {
                 <div class="nav-sub-menu">
                     <a href="<?= BASE_URL ?>admin/staff_attendance.php" class="nav-sub-item <?= $current_page==='staff_attendance.php'?'active':'' ?>">My Attendance</a>
                     <a href="<?= BASE_URL ?>admin/apply_leave.php" class="nav-sub-item <?= $current_page==='apply_leave.php'?'active':'' ?>">Apply Leave</a>
+                    <a href="<?= BASE_URL ?>admin/staff_profile.php" class="nav-sub-item <?= $current_page==='staff_profile.php'?'active':'' ?>">My Profile</a>
                 </div>
             </div>
         <?php endif; ?>

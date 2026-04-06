@@ -5,12 +5,17 @@ require_once '../config/database.php';
 header("Cache-Control: no-cache, no-store, must-revalidate"); // Cache Buster
 header("Pragma: no-cache"); 
 header("Expires: 0");
-checkAccess(['admin', 'manager']);
+checkAccess(['admin', 'manager', 'staff', 'sales_person']);
 
 $cid = $_SESSION['company_id'];
-$user_id = (int)($_GET['id'] ?? 0);
+$user_id = (int)($_GET['id'] ?? $_SESSION['user_id']); // Default to self
 
-if (!$user_id) { header("Location: staff.php"); exit(); }
+// Security: Non-admins can only view their own profile
+if (!in_array($_SESSION['user_role'], ['admin', 'manager']) && $user_id !== (int)$_SESSION['user_id']) {
+    header("Location: dashboard.php?msg=Access Denied"); exit();
+}
+
+if (!$user_id) { header("Location: dashboard.php"); exit(); }
 
 // 0. Auto-patch for Profile Image & Phone
 try {
