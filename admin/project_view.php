@@ -104,10 +104,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $total = (float)$_POST['total_value'];
         $adv = (float)$_POST['advance_paid'];
         $comm = (float)$_POST['commission_percent'];
+        $s_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+        $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE projects SET project_name = ?, client_name = ?, total_value = ?, advance_paid = ?, commission_percent = ? WHERE id = ? AND company_id IN ($cids_in)")
-            ->execute([$pname, $client, $total, $adv, $comm, $pid]);
+        $pdo->prepare("UPDATE projects SET project_name = ?, client_name = ?, total_value = ?, advance_paid = ?, commission_percent = ?, start_date = ?, end_date = ? WHERE id = ? AND company_id IN ($cids_in)")
+            ->execute([$pname, $client, $total, $adv, $comm, $s_date, $e_date, $pid]);
 
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
             ->execute([$pid, $uid, "Project details updated by HQ. New Value: ₹$total, Commission: $comm%"]);
@@ -217,6 +219,14 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <div style="font-weight:600; color:#6366f1;"><?= number_format($p['commission_percent'], 2) ?>%</div>
                         </div>
                         <?php endif; ?>
+                        <div>
+                            <label style="font-size:0.8rem; color:var(--text-muted);">START DATE</label>
+                            <div style="font-weight:600;"><?= $p['start_date'] ? date('d M, Y', strtotime($p['start_date'])) : 'Not Set' ?></div>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; color:var(--text-muted);">EST. DEADLINE</label>
+                            <div style="font-weight:600; color:#ef4444;"><?= $p['end_date'] ? date('d M, Y', strtotime($p['end_date'])) : 'No Deadline' ?></div>
+                        </div>
                     </div>
                 </div>
 
@@ -359,6 +369,16 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
             <div class="form-group">
                 <label>Commission Percentage (%)</label>
                 <input type="number" step="0.01" name="commission_percent" class="form-control" value="<?= $p['commission_percent'] ?>" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="<?= $p['start_date'] ?>">
+                </div>
+                <div class="form-group">
+                    <label>Target Deadline (End Date)</label>
+                    <input type="date" name="end_date" class="form-control" value="<?= $p['end_date'] ?>">
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="width:100%;">Update Project</button>
         </form>

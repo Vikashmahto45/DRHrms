@@ -79,14 +79,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
             $custom_sp = trim($_POST['custom_sales_name'] ?? '');
             $comm_pct = isset($_POST['commission_percent']) && $_POST['commission_percent'] !== '' ? (float)$_POST['commission_percent'] : null;
+            $s_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+            $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
             // Rule: Sub-branch entries are 'Pending HQ Review'
             $status = $is_hq ? 'Active' : 'Pending HQ Review';
             $verified = $is_hq ? 1 : 0;
 
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp]);
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp, $s_date, $e_date]);
                 $msg = $is_hq ? "Project created and verified." : "Project submitted. Awaiting HQ Verification."; 
                 $msgType = "success";
             }
@@ -279,9 +281,24 @@ $staff_members = $sp_stmt->fetchAll();
                 </div>
             </div>
             <?php endif; ?>
-            <div class="form-group">
-                <label>Commission Percentage (%) *</label>
-                <input type="number" step="0.01" name="commission_percent" class="form-control" placeholder="e.g. 15.00" required>
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label>Commission Percentage (%) *</label>
+                    <input type="number" step="0.01" name="commission_percent" class="form-control" placeholder="e.g. 15.00" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <!-- Spacer for alignment if needed -->
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label>Start Date</label>
+                    <input type="date" name="start_date" class="form-control">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Target Deadline (End Date)</label>
+                    <input type="date" name="end_date" class="form-control">
+                </div>
             </div>
             <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
                 <label>Assign to HQ Staff (Main Branch Only)</label>
