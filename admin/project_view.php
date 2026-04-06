@@ -96,6 +96,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } catch (Exception $e) { $msg = $e->getMessage(); }
 }
 
+// Handle Project Edit (HQ Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $is_hq) {
+    try {
+        $pname = trim($_POST['project_name']);
+        $client = trim($_POST['client_name']);
+        $total = (float)$_POST['total_value'];
+        $adv = (float)$_POST['advance_paid'];
+        $comm = (float)$_POST['commission_percent'];
+
+        $pdo->beginTransaction();
+        $pdo->prepare("UPDATE projects SET project_name = ?, client_name = ?, total_value = ?, advance_paid = ?, commission_percent = ? WHERE id = ? AND company_id IN ($cids_in)")
+            ->execute([$pname, $client, $total, $adv, $comm, $pid]);
+
+        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+            ->execute([$pid, $uid, "Project details updated by HQ. New Value: ₹$total, Commission: $comm%"]);
+        
+        $pdo->commit();
+        header("Location: project_view.php?id=$pid&msg=Project Details Updated"); exit();
+    } catch (Exception $e) { $msg = $e->getMessage(); }
+}
+
+// Handle Project Delete (HQ Only)
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq) {
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
+        $pdo->prepare("DELETE FROM projects WHERE id = ? AND company_id IN ($cids_in)")->execute([$pid]);
+        $pdo->commit();
+        header("Location: projects.php?msg=Project Deleted Successfully"); exit();
+    } catch (Exception $e) { $pdo->rollBack(); die($e->getMessage()); }
+}
+
 // Fetch Staff for assignment dropdown (HQ view)
 $staff_members = [];
 if ($is_hq) {
@@ -140,7 +172,12 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 <a href="projects.php" style="text-decoration:none; color:var(--text-muted); font-size:0.9rem;">← Back to Projects</a>
                 <h1 style="margin-top:10px;"><?= htmlspecialchars($p['project_name']) ?></h1>
             </div>
-            <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
+                <?php if ($is_hq): ?>
+                    <button class="btn btn-sm btn-outline" style="border-color:#ef4444; color:#ef4444;" onclick="if(confirm('Are you sure you want to delete this project? All logs will be lost.')) window.location.href='project_view.php?id=<?= $pid ?>&action=delete'">Delete</button>
+                <?php endif; ?>
+            </div>
         </div>
 
         <?php if (isset($_GET['msg'])): ?>
@@ -151,7 +188,12 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
             <!-- Left: Logs & Details -->
             <div>
                 <div class="content-card">
-                    <h3>Project Information</h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 style="margin:0;">Project Information</h3>
+                        <?php if ($is_hq): ?>
+                            <button class="btn btn-sm btn-outline" onclick="document.getElementById('editProjectModal').classList.add('open')">Edit Details</button>
+                        <?php endif; ?>
+                    </div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-top:1rem;">
                         <div>
                             <label style="font-size:0.8rem; color:var(--text-muted);">CLIENT</label>
@@ -169,6 +211,10 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                         <div>
                             <label style="font-size:0.8rem; color:var(--text-muted);">ADVANCE PAID</label>
                             <div style="font-weight:600; color:#3b82f6;">₹<?= number_format($p['advance_paid'], 2) ?></div>
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; color:var(--text-muted);">COMMISSION</label>
+                            <div style="font-weight:600; color:#6366f1;"><?= number_format($p['commission_percent'], 2) ?>%</div>
                         </div>
                         <?php endif; ?>
                     </div>
@@ -283,5 +329,42 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
     </main>
 </div>
+<!-- Edit Project Modal -->
+<?php if ($is_hq): ?>
+<div class="modal-overlay" id="editProjectModal">
+    <div class="modal-box" style="max-width:500px;">
+        <button class="modal-close" onclick="this.closest('.modal-overlay').classList.remove('open')">&times;</button>
+        <h3>Edit Project Details</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">Update the core details of this project.</p>
+        <form method="POST">
+            <input type="hidden" name="action" value="edit_project">
+            <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" name="project_name" class="form-control" value="<?= htmlspecialchars($p['project_name']) ?>" required>
+            </div>
+            <div class="form-group">
+                <label>Client Name</label>
+                <input type="text" name="client_name" class="form-control" value="<?= htmlspecialchars($p['client_name']) ?>" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Total Value (₹)</label>
+                    <input type="number" step="0.01" name="total_value" class="form-control" value="<?= $p['total_value'] ?>" required>
+                </div>
+                <div class="form-group">
+                    <label>Advance Paid (₹)</label>
+                    <input type="number" step="0.01" name="advance_paid" class="form-control" value="<?= $p['advance_paid'] ?>" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Commission Percentage (%)</label>
+                <input type="number" step="0.01" name="commission_percent" class="form-control" value="<?= $p['commission_percent'] ?>" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Update Project</button>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
+
 </body>
 </html>
