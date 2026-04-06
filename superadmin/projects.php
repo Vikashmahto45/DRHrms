@@ -2,7 +2,7 @@
 // /superadmin/projects.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess(['super_admin']);
+checkAccess('super_admin');
 
 $msg = $_GET['msg'] ?? ''; $msgType = $_GET['msgType'] ?? 'success';
 

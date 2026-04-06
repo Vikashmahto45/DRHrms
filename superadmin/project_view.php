@@ -2,7 +2,7 @@
 // /superadmin/project_view.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess(['super_admin']);
+checkAccess('super_admin');
 
 $uid = $_SESSION['user_id'] ?? 0;
 $pid = (int)($_GET['id'] ?? 0);
