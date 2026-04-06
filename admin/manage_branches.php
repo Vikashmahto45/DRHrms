@@ -73,7 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── Fetch Branches ──────────────────────────────────────────────────
 $branches = $pdo->query("
-    SELECT c.*, COUNT(u.id) AS user_count 
+    SELECT 
+        c.*, 
+        COUNT(DISTINCT u.id) AS user_count,
+        (SELECT AVG(commission_percent) FROM projects WHERE branch_id = c.id AND commission_percent IS NOT NULL) as avg_commission
     FROM companies c 
     LEFT JOIN users u ON c.id = u.company_id 
     WHERE c.is_main_branch = 0 
@@ -118,7 +121,7 @@ $branchList = $branches->fetchAll();
                 <thead>
                     <tr>
                         <th>Branch Name</th><th>Admin Contact</th><th>Users</th>
-                        <th>Commission Cut</th><th>Status</th><th>Login Link</th><th>Actions</th>
+                        <th>Avg Project Comm.</th><th>Status</th><th>Login Link</th><th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,7 +141,7 @@ $branchList = $branches->fetchAll();
                             ?>
                         </td>
                         <td><?= $b['user_count'] ?> Users</td>
-                        <td style="color:#10b981;font-weight:bold;"><?= $b['commission_rate'] ?>%</td>
+                        <td style="color:#6366f1;font-weight:bold;"><?= $b['avg_commission'] !== null ? number_format((float)$b['avg_commission'], 2).'%' : 'Not Set' ?></td>
                         <td><span class="badge badge-<?= $b['status'] ?>"><?= ucfirst($b['status']) ?></span></td>
                         <td>
                             <?php if ($b['login_slug']): ?>
