@@ -63,6 +63,12 @@ try {
     $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'end_date'");
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN end_date DATE NULL AFTER start_date"); }
 
+    $stmt = $pdo->query("SHOW COLUMNS FROM projects LIKE 'created_by'");
+    if (!$stmt->fetch()) { 
+        $pdo->exec("ALTER TABLE projects ADD COLUMN created_by INT NULL AFTER sales_person_id"); 
+        $pdo->exec("UPDATE projects SET created_by = sales_person_id WHERE created_by IS NULL");
+    }
+
     // 2. Enum Update (Status)
     $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Branch Approval', 'Pending HQ Review', 'Active', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending Branch Approval'");
 
@@ -129,8 +135,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $verified = ($status === 'Active') ? 1 : 0;
 
             if ($client && $pname) {
-                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp, $s_date, $e_date]);
+                $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, created_by, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$cid, $cid, $sp_id, $uid, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp, $s_date, $e_date]);
 
                 header("Location: projects.php?msg=Project added successfully. Status: $status&type=success"); 
                 exit();

@@ -50,13 +50,13 @@ $my_tasks = $pdo->prepare("
 $my_tasks->execute([$uid, $cid]);
 $my_tasks = $my_tasks->fetchAll();
 
-// 4. My Assigned Projects
+// 4. My Assigned Projects (Including projects I created)
 $my_projects = $pdo->prepare("
     SELECT * FROM projects 
-    WHERE sales_person_id = ? AND status NOT IN ('Completed', 'Cancelled') 
+    WHERE (sales_person_id = ? OR created_by = ?) AND status NOT IN ('Completed', 'Cancelled') 
     ORDER BY created_at DESC LIMIT 5
 ");
-$my_projects->execute([$uid]);
+$my_projects->execute([$uid, $uid]);
 $my_projects = $my_projects->fetchAll();
 
 // Helper for source badges (Reusable from leads.php - ideally move to a shared helper later)

@@ -14,6 +14,8 @@ $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?"
 $branch_info->execute([$cid]);
 $is_hq = (bool)$branch_info->fetchColumn();
 $is_hq_admin = ($is_hq && $_SESSION['user_role'] === 'admin');
+$is_creator = ($p['created_by'] == $uid);
+$can_manage = ($is_hq_admin || $is_creator);
 
 // Fetch Accessible Branches for hierarchy visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
@@ -138,8 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); }
 }
 
-// Handle Project Edit (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $is_hq_admin) {
+// Handle Project Edit (HQ or Creator)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $can_manage) {
     try {
         $pname = trim($_POST['project_name']);
         $client = trim($_POST['client_name']);
@@ -226,7 +228,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 <div class="content-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                         <h3 style="margin:0;">Project Information</h3>
-                        <?php if ($is_hq_admin): ?>
+                        <?php if ($can_manage): ?>
                             <button class="btn btn-sm btn-outline" onclick="document.getElementById('editProjectModal').classList.add('open')">Edit Details</button>
                         <?php endif; ?>
                     </div>
@@ -369,7 +371,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <?php endif; ?>
 
-                <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq_admin)): ?>
+                <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $can_manage)): ?>
                 <div class="content-card" style="margin-top:1.5rem;">
                     <h3>Update Progress</h3>
                     <form method="POST" style="margin-top:1rem;">
@@ -398,7 +400,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
     </main>
 </div>
 <!-- Edit Project Modal -->
-<?php if ($is_hq_admin): ?>
+<?php if ($can_manage): ?>
 <div class="modal-overlay" id="editProjectModal">
     <div class="modal-box" style="max-width:500px;">
         <button class="modal-close" onclick="this.closest('.modal-overlay').classList.remove('open')">&times;</button>
