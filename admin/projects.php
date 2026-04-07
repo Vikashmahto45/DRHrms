@@ -345,6 +345,7 @@ $catalog = $svc_stmt->fetchAll();
                     <!-- Spacer for alignment if needed -->
                 </div>
             </div>
+            <?php if ($role === 'admin' || $role === 'manager'): ?>
             <div class="form-row">
                 <div class="form-group" style="flex:1;">
                     <label>Start Date</label>
@@ -355,6 +356,7 @@ $catalog = $svc_stmt->fetchAll();
                     <input type="date" name="end_date" class="form-control">
                 </div>
             </div>
+            <?php endif; ?>
             <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
                 <label>Assign to HQ Staff (Main Branch Only)</label>
                 <div style="display:flex; gap:10px;">
