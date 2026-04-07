@@ -357,6 +357,7 @@ $catalog = $svc_stmt->fetchAll();
                 </div>
             </div>
             <?php endif; ?>
+            <?php if ($role !== 'sales_person'): ?>
             <div class="form-group">
                 <label>Assign to Staff Member</label>
                 <div style="display:flex; gap:10px;">
@@ -375,6 +376,7 @@ $catalog = $svc_stmt->fetchAll();
                     <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and staff assignment is handled by the Main Branch.</p>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
             <div class="form-group">
                 <label>Project Brief</label>
                 <textarea name="description" class="form-control" rows="3" placeholder="Scope of work..."></textarea>
