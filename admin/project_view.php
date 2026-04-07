@@ -78,7 +78,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Verification (HQ Only)
+// Handle Branch-Level Approval (Sub-branch Admin Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'branch_approve' && !$is_hq && ($role === 'admin' || $role === 'manager')) {
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ? AND branch_id = ?")->execute([$pid, $cid]);
+        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+            ->execute([$pid, $uid, "Branch Admin approved project. Now awaiting HQ Final Review."]);
+        $pdo->commit();
+        header("Location: project_view.php?id=$pid&msg=Approved for HQ Review"); exit();
+    } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); }
+}
+
+// Handle Final Verification (HQ Only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq_admin) {
     try {
         $adv = (float)$_POST['advance_paid'];
@@ -90,10 +102,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ->execute([$uid, $adv, ($sp_id ?: null), $custom_sp, $pid]);
         
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
-            ->execute([$pid, $uid, "Project verified by HQ. Advance confirmed: ₹$adv. Assigned to salesperson."]);
+            ->execute([$pid, $uid, "Project verified by HQ. Status set to Active."]);
         
         $pdo->commit();
-        header("Location: project_view.php?id=$pid&msg=Project Verified and Assigned"); exit();
+        header("Location: project_view.php?id=$pid&msg=Project Verified and Started"); exit();
     } catch (Exception $e) { $msg = $e->getMessage(); }
 }
 
@@ -277,6 +289,18 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
             <!-- Right: Action Form -->
             <div>
+                <!-- STEP 1: Branch Approval (Only visible to Sub-branch Admin if Pending Branch Approval) -->
+                <?php if ($p['status'] === 'Pending Branch Approval' && !$is_hq && ($role === 'admin' || $role === 'manager')): ?>
+                <div class="content-card" style="border: 2px solid #6366f1; margin-bottom:1.5rem;">
+                    <h3 style="color:#6366f1;">Branch Admin Review</h3>
+                    <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Review salesperson entry before sending to HQ.</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="branch_approve">
+                        <button type="submit" class="btn btn-primary" style="width:100%; background:#6366f1;">Approve for HQ Review</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
                 <?php if ($is_hq_admin): ?>
                 <div class="content-card" style="border: 2px solid var(--primary-color); margin-bottom:1.5rem;">
                     <h3 style="color:var(--primary-color);">HQ Project Management</h3>

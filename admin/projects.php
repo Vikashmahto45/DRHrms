@@ -64,7 +64,7 @@ try {
     if (!$stmt->fetch()) { $pdo->exec("ALTER TABLE projects ADD COLUMN end_date DATE NULL AFTER start_date"); }
 
     // 2. Enum Update (Status)
-    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review'");
+    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Branch Approval', 'Pending HQ Review', 'Active', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending Branch Approval'");
 
     // 3. Ensure tables exist (Fallback)
     $pdo->exec("CREATE TABLE IF NOT EXISTS projects (
@@ -79,7 +79,7 @@ try {
         total_value DECIMAL(15,2) DEFAULT 0.00,
         commission_percent DECIMAL(5,2) DEFAULT NULL,
         advance_paid DECIMAL(15,2) DEFAULT 0.00,
-        status ENUM('Pending Approval', 'Active', 'On Hold', 'Completed', 'Cancelled', 'Pending HQ Review') DEFAULT 'Pending HQ Review',
+        status ENUM('Pending Branch Approval', 'Pending HQ Review', 'Active', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending Branch Approval',
         progress_pct INT DEFAULT 0,
         is_verified TINYINT(1) DEFAULT 0,
         verified_by INT NULL,
@@ -101,9 +101,9 @@ try {
 
 $msg = ''; $msgType = '';
 
-// Handle Direct Entry (Admin only)
+// Handle Direct Entry (Admin / Manager / Sales Person)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_project') {
-    if ($role === 'admin' || $role === 'manager') {
+    if (in_array($role, ['admin', 'manager', 'sales_person'])) {
         try {
             $client = trim($_POST['client_name'] ?? '');
             $pname = trim($_POST['project_name'] ?? '');
@@ -111,20 +111,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $adv = (float)($_POST['advance_paid'] ?? 0);
             $desc = trim($_POST['description'] ?? '');
             $source = trim($_POST['source'] ?? 'Walk-in');
-            $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : null;
+            $sp_id = !empty($_POST['sales_person_id']) ? (int)$_POST['sales_person_id'] : ($role === 'sales_person' ? $uid : null);
             $custom_sp = trim($_POST['custom_sales_name'] ?? '');
             $comm_pct = isset($_POST['commission_percent']) && $_POST['commission_percent'] !== '' ? (float)$_POST['commission_percent'] : null;
             $s_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
             $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
-            // Rule: Sub-branch entries are 'Pending HQ Review'
-            $status = $is_hq ? 'Active' : 'Pending HQ Review';
-            $verified = $is_hq ? 1 : 0;
+            // 3-STEP APPROVAL LOGIC
+            if ($is_hq) {
+                // If HQ Admin creates it -> Active. If HQ Salesperson creates it -> Pending HQ Review.
+                $status = ($role === 'admin' || $role === 'manager') ? 'Active' : 'Pending HQ Review';
+            } else {
+                // If Sub-branch Admin creates it -> Pending HQ Review. If Sub-branch Salesperson -> Pending Branch Approval.
+                $status = ($role === 'admin' || $role === 'manager') ? 'Pending HQ Review' : 'Pending Branch Approval';
+            }
+            
+            $verified = ($status === 'Active') ? 1 : 0;
 
             if ($client && $pname) {
                 $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp, $s_date, $e_date]);
-                $msg = $is_hq ? "Project created and verified." : "Project submitted. Awaiting HQ Verification."; 
+                
+                $msg = "Project added successfully. Status: $status";
                 $msgType = "success";
             }
         } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
@@ -193,6 +201,7 @@ $catalog = $svc_stmt->fetchAll();
         .progress-bar-container { background: #e2e8f0; border-radius: 20px; height: 10px; overflow: hidden; margin-top: 5px; }
         .progress-bar-fill { background: var(--primary-color); height: 100%; transition: width 0.3s; }
         .st-Pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .st-Pending-Branch-Approval { background: rgba(99,102,241,0.1); color: #6366f1; }
         .st-Pending-HQ-Review { background: rgba(239,68,68,0.1); color: #ef4444; }
         .st-Active { background: rgba(16,185,129,0.1); color: #10b981; }
         .st-Hold { background: rgba(107,114,128,0.1); color: #6b7280; }
@@ -212,7 +221,7 @@ $catalog = $svc_stmt->fetchAll();
                 <p style="color:var(--text-muted)">Manage execution and monitor detailed project growth.</p>
             </div>
             <div style="display:flex;gap:10px;">
-                <?php if ($role === 'admin' || $role === 'manager'): ?>
+                <?php if (in_array($role, ['admin', 'manager', 'sales_person'])): ?>
                     <button class="btn btn-primary" onclick="document.getElementById('addProjectModal').classList.add('open')">+ New Project Entry</button>
                 <?php endif; ?>
             </div>
