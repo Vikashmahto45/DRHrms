@@ -82,12 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'branch_approve' && !$is_hq && ($role === 'admin' || $role === 'manager')) {
     try {
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ? AND branch_id = ?")->execute([$pid, $cid]);
+        // Allow approval if branch_id matches OR if it's null (for older projects)
+        $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ? AND (branch_id = ? OR branch_id IS NULL)")->execute([$pid, $cid]);
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
             ->execute([$pid, $uid, "Branch Admin approved project. Now awaiting HQ Final Review."]);
         $pdo->commit();
         header("Location: project_view.php?id=$pid&msg=Approved for HQ Review"); exit();
-    } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); }
+    } catch (Exception $e) { 
+        $pdo->rollBack(); 
+        header("Location: project_view.php?id=$pid&error=" . urlencode($e->getMessage())); exit();
+    }
 }
 
 // Handle Final Verification (HQ Only)
@@ -211,6 +215,9 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
         <?php if (isset($_GET['msg'])): ?>
             <div class="flash-success" style="margin-bottom:2rem;"><?= htmlspecialchars($_GET['msg']) ?></div>
         <?php endif; ?>
+        <?php if (isset($_GET['error'])): ?>
+            <div class="flash-error" style="margin-bottom:2rem; background:#fee2e2; color:#b91c1c; padding:15px; border-radius:8px; border:1px solid #fecaca;"><?= htmlspecialchars($_GET['error']) ?></div>
+        <?php endif; ?>
 
         <div style="display:grid; grid-template-columns: 1fr 300px; gap: 2rem;">
             <!-- Left: Logs & Details -->
@@ -301,7 +308,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <?php endif; ?>
 
-                <?php if ($is_hq_admin): ?>
+                <!-- STEP 2: HQ Final Verification (Only visible to HQ Admin when status is ready for them) -->
+                <?php if ($is_hq_admin && $p['status'] !== 'Pending Branch Approval'): ?>
                 <div class="content-card" style="border: 2px solid var(--primary-color); margin-bottom:1.5rem;">
                     <h3 style="color:var(--primary-color);">HQ Project Management</h3>
                     <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Confirm payment and assign staff for execution.</p>
