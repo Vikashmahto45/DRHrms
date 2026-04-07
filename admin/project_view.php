@@ -19,6 +19,17 @@ $is_hq_admin = ($is_hq && $_SESSION['user_role'] === 'admin');
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
+// Handle Project Delete (HQ Only) - Done at the top to prevent "Project not found" error
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq_admin) {
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
+        $pdo->prepare("DELETE FROM projects WHERE id = ? AND (company_id IN ($cids_in) OR branch_id IN ($cids_in))")->execute([$pid]);
+        $pdo->commit();
+        header("Location: projects.php?msg=Project Deleted Successfully"); exit();
+    } catch (Exception $e) { $pdo->rollBack(); die($e->getMessage()); }
+}
+
 // Fetch Project
 $stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in))");
 $stmt->execute([$pid]);
@@ -148,17 +159,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $pdo->commit();
         header("Location: project_view.php?id=$pid&msg=Project Details Updated"); exit();
     } catch (Exception $e) { $msg = $e->getMessage(); }
-}
-
-// Handle Project Delete (HQ Only)
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq_admin) {
-    try {
-        $pdo->beginTransaction();
-        $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
-        $pdo->prepare("DELETE FROM projects WHERE id = ? AND (company_id IN ($cids_in) OR branch_id IN ($cids_in))")->execute([$pid]);
-        $pdo->commit();
-        header("Location: projects.php?msg=Project Deleted Successfully"); exit();
-    } catch (Exception $e) { $pdo->rollBack(); die($e->getMessage()); }
 }
 
 // Fetch Staff for assignment dropdown (HQ view)

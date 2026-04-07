@@ -357,8 +357,8 @@ $catalog = $svc_stmt->fetchAll();
                 </div>
             </div>
             <?php endif; ?>
-            <div class="form-group" <?= !$is_hq ? 'style="display:none;"' : '' ?>>
-                <label>Assign to HQ Staff (Main Branch Only)</label>
+            <div class="form-group">
+                <label>Assign to Staff Member</label>
                 <div style="display:flex; gap:10px;">
                     <select name="sales_person_id" class="form-control" style="flex:1;">
                         <option value="">-- No User Selected --</option>
