@@ -78,18 +78,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Branch-Level Approval (Sub-branch Admin Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'branch_approve' && !$is_hq && ($role === 'admin' || $role === 'manager')) {
+// Handle Branch-Level Approval (Admin / Manager Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'branch_approve' && ($role === 'admin' || $role === 'manager')) {
     try {
         $pdo->beginTransaction();
-        // Allow approval if branch_id matches OR if it's null (for older projects)
-        $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ? AND (branch_id = ? OR branch_id IS NULL)")->execute([$pid, $cid]);
+        // Update status for the project
+        $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ?")->execute([$pid]);
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
-            ->execute([$pid, $uid, "Branch Admin approved project. Now awaiting HQ Final Review."]);
+            ->execute([$pid, $uid, "Branch-level approval completed. Now awaiting HQ Final Review."]);
         $pdo->commit();
         header("Location: project_view.php?id=$pid&msg=Approved for HQ Review"); exit();
     } catch (Exception $e) { 
-        $pdo->rollBack(); 
+        if ($pdo->inTransaction()) { $pdo->rollBack(); }
         header("Location: project_view.php?id=$pid&error=" . urlencode($e->getMessage())); exit();
     }
 }
