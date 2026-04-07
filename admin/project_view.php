@@ -6,6 +6,7 @@ checkAccess(['admin', 'manager', 'sales_person', 'staff']);
 
 $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
+$role = $_SESSION['user_role'] ?? '';
 $pid = (int)($_GET['id'] ?? 0);
 
 // Fetch Branch Info
