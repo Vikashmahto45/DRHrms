@@ -131,9 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if ($client && $pname) {
                 $stmt = $pdo->prepare("INSERT INTO projects (company_id, branch_id, sales_person_id, client_name, project_name, source, project_description, total_value, commission_percent, advance_paid, status, is_verified, custom_sales_name, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$cid, $cid, $sp_id, $client, $pname, $source, $desc, $val, $comm_pct, $adv, $status, $verified, $custom_sp, $s_date, $e_date]);
-                
-                $msg = "Project added successfully. Status: $status";
-                $msgType = "success";
+
+                header("Location: projects.php?msg=Project added successfully. Status: $status&type=success"); 
+                exit();
             }
         } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
     }
