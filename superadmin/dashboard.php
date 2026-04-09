@@ -250,10 +250,6 @@ try {
             <?php unset($_SESSION['sa_flash_message']); ?>
         <?php endif; ?>
 
-        <div style="background: #6366f1; color: #fff; padding: 15px; margin-bottom: 2rem; border-radius: 12px; text-align: center; font-weight: 700; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);">
-            🚀 LIVE DEPLOYMENT TEST: SYSTEM UPDATED SUCCESSFULY AT <?= date('H:i:s') ?>!
-        </div>
-
         <div class="header">
             <div>
                 <h1>Overview</h1>
