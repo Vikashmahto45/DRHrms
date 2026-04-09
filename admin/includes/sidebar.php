@@ -234,6 +234,6 @@ if ($cid > 0) {
                 <div style="font-size:.8rem;color:var(--text-muted);"><?= ucfirst($_SESSION['user_role']) ?> Panel</div>
             </div>
         </div>
-        <a href="<?= BASE_URL ?>logout.php?role=user" class="btn btn-outline" style="width:100%;text-align:center;font-size:.85rem;padding:.5rem;">Logout</a>
+        <a href="<?= BASE_URL ?>logout.php?role=user" class="btn btn-outline" style="width:100%; text-align:center; font-size:0.85rem; padding:0.6rem 0.5rem; border: 1px solid rgba(255, 255, 255, 0.4) !important; border-radius: 30px !important; text-decoration: none; color: #ffffff !important;">Logout</a>
     </div>
 </aside>
