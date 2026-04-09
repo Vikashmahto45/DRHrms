@@ -102,9 +102,9 @@ ul {
 }
 
 .nav-item.active {
-    background: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: #fff;
-    box-shadow: 0 10px 15px -3px var(--primary-glow);
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
 }
 
 .nav-icon {
