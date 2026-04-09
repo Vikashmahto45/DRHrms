@@ -21,22 +21,30 @@ if ($cid > 0) {
         <div style="font-size:.7rem; color:var(--text-muted); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Company Panel</div>
     </div>
     <style>
+        .sidebar {
+            background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%) !important;
+            border-right: none !important;
+            color: #ffffff !important;
+        }
+        .sidebar .logo span, 
+        .sidebar .nav-item, 
+        .sidebar .nav-icon,
+        .sidebar div[style*="color:var(--text-muted)"] {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+        .nav-item {
+            margin: 0.2rem 1rem !important;
+            border-radius: 10px !important;
+        }
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
         .nav-item.active {
-            background-color: transparent !important;
-            background-image: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
             color: #ffffff !important;
-            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;
             font-weight: 700 !important;
-        }
-        .nav-item.active .nav-icon {
-            color: #ffffff !important;
-        }
-        .logo span {
-            background: linear-gradient(135deg, #6366f1, #a855f7) !important;
-            -webkit-background-clip: text !important;
-            background-clip: text !important;
-            -webkit-text-fill-color: transparent !important;
-            display: inline-block !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
         }
     </style>
     <nav class="nav-menu">
