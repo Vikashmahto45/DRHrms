@@ -8,7 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <aside class="sidebar">
     <div class="sidebar-header">
-        <div class="logo">Loom</div>
+        <div class="logo"><span>Loom</span></div>
         <div style="font-size:.7rem; color:var(--text-muted); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Super Admin Portal</div>
     </div>
     <nav class="nav-menu">
