@@ -46,6 +46,23 @@ if ($cid > 0) {
             font-weight: 700 !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
         }
+        /* Dropdown and Sub-tab Fixes */
+        .nav-dropdown-toggle, 
+        .nav-dropdown-toggle span,
+        .nav-sub-item,
+        .chevron {
+            color: #ffffff !important;
+            opacity: 1 !important;
+        }
+        .nav-sub-item {
+            opacity: 0.8 !important;
+            padding-left: 3.5rem !important;
+        }
+        .nav-sub-item:hover, .nav-sub-item.active {
+            opacity: 1 !important;
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
         .sidebar-footer {
             background: transparent !important;
             border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
