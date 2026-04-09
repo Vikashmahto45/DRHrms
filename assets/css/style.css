@@ -1,14 +1,15 @@
 /* --- Premium Loom Design System --- */
 :root {
-    /* Palette: Indigo & Deep Slate */
-    --primary-color: #6366f1; /* Electric Indigo */
-    --primary-glow: rgba(99, 102, 241, 0.5);
-    --secondary-color: #8b5cf6; /* Modern Violet */
-    --gradient-end: #8b5cf6; /* Used for avatar backgrounds */
-    --bg-main: #f8fafc; /* Softest Slate */
-    --text-main: #0f172a; /* Deep Navy */
-    --text-muted: #64748b; /* Slate 500 */
-    --glass-bg: rgba(255, 255, 255, 0.7);
+    /* Loom Premium Design System */
+    --primary-color: #4f46e5;
+    --primary-gradient: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%);
+    --bg-main: #f8fafc; /* Silk White with Indigo Tint */
+    --card-bg: #ffffff;
+    --text-main: #1e293b; /* Deep Indigo Slate */
+    --text-muted: #64748b;
+    --glass-border: rgba(99, 102, 241, 0.1);
+    --glass-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    --radius-premium: 14px;
     --glass-border: rgba(226, 232, 240, 0.8);
     --card-bg: #ffffff;
     --card-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
@@ -146,6 +147,68 @@ h3 {
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--glass-border);
     box-shadow: var(--card-shadow);
+}
+
+ /* --- Premium Loom Components --- */
+.content-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-premium);
+    padding: 1.5rem;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.content-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Premium Button System */
+.btn-primary {
+    background: var(--primary-gradient) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 15px rgba(30, 27, 75, 0.2);
+    transition: all 0.3s ease;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(30, 27, 75, 0.3);
+}
+
+.btn-outline {
+    background: transparent !important;
+    border: 1px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+    background: rgba(79, 70, 229, 0.05) !important;
+    transform: translateY(-1px);
 }
 
 .nav-container {

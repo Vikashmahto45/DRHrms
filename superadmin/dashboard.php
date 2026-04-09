@@ -121,50 +121,51 @@ try {
             margin-bottom: 2.5rem;
         }
         .stat-card {
-            padding: 1.4rem 1.5rem;
-            border-radius: 14px;
-            background: #fff;
-            border: 1px solid #e8edf3;
+            background: var(--card-bg);
+            border-radius: var(--radius-premium);
+            padding: 1.5rem;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            transition: all 0.25s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            gap: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
         }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-        .stat-icon { width: 52px; height: 52px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
-        .icon-blue { background: rgba(59,130,246,0.1); }
-        .icon-green { background: rgba(16,185,129,0.1); }
-        .icon-purple { background: rgba(139,92,246,0.1); }
-        .icon-pink { background: rgba(236,72,153,0.1); }
-        .stat-details p { color: #64748b; font-size: 0.82rem; margin: 0 0 2px 0; font-weight: 500; }
-        .stat-details h3 { font-size: 2rem; margin: 0; color: #0f172a; font-weight: 800; line-height: 1; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1); }
+        .stat-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0; }
+        .icon-blue { background: rgba(79, 70, 229, 0.1); color: #4f46e5; }
+        .icon-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .icon-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+        .icon-pink { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+        .stat-details p { color: var(--text-muted); font-size: 0.85rem; margin: 0 0 2px 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-details h3 { font-size: 2.2rem; margin: 0; color: var(--text-main); font-weight: 800; line-height: 1; }
 
         /* Branch Performance Cards */
-        .branch-section { margin-bottom: 2.5rem; }
-        .branch-section-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+        .branch-section { margin-bottom: 3rem; }
+        .branch-section-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; }
 
-        .branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem; }
+        .branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
 
         /* Announcements */
-        .announcement-card { background: #fff; padding: 1.5rem; border-radius: 14px; border: 1px solid #e2e8f0; margin-bottom: 2.5rem; }
-        .announcement-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: flex-end; margin-top: 1rem; }
-        .announcement-list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
-        .ann-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 10px; font-size: 0.9rem; border-left: 4px solid #64748b; background: #f8fafc; }
-        .ann-info { border-color: #3b82f6; }
+        .announcement-card { background: var(--card-bg); padding: 1.5rem; border-radius: var(--radius-premium); border: 1px solid var(--glass-border); margin-bottom: 3rem; box-shadow: var(--glass-shadow); }
+        .announcement-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: flex-end; margin-top: 1rem; }
+        .announcement-list { margin-top: 2rem; display: flex; flex-direction: column; gap: 12px; }
+        .ann-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-radius: 12px; font-size: 0.9rem; border-left: 5px solid var(--text-muted); background: var(--bg-main); transition: all 0.2s; }
+        .ann-item:hover { transform: translateX(5px); }
+        .ann-info { border-color: var(--primary-color); }
         .ann-warning { border-color: #f59e0b; }
         .ann-danger { border-color: #ef4444; }
         .ann-success { border-color: #10b981; }
 
         .branch-card {
-            background: #fff;
-            border-radius: 16px;
-            border: 1px solid #e8edf3;
+            background: var(--card-bg);
+            border-radius: var(--radius-premium);
+            border: 1px solid var(--glass-border);
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            transition: all 0.25s ease;
+            box-shadow: var(--glass-shadow);
+            transition: all 0.3s ease;
         }
-        .branch-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); transform: translateY(-2px); }
+        .branch-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.1); }
 
         .branch-card-header {
             padding: 1.1rem 1.4rem;

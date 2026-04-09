@@ -45,13 +45,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 3rem;
+    padding: 0.8rem 2.5rem;
     background: #ffffff;
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 2px solid var(--glass-border);
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    box-shadow: var(--glass-shadow);
 }
 
 .search-wrapper {
@@ -70,7 +70,7 @@
 .search-wrapper input {
     width: 100%;
     padding: 0.6rem 1rem 0.6rem 2.5rem;
-    background: #f1f5f9;
+    background: var(--bg-main);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     color: var(--text-main);

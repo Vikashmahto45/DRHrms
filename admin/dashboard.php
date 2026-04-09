@@ -127,7 +127,7 @@ for ($i = 6; $i >= 0; $i--) {
         
         <!-- Global Announcements -->
         <?php foreach ($announcements as $ann): ?>
-            <div style="background: #fff; border-left: 5px solid <?= $ann['type'] === 'danger' ? '#ef4444' : ($ann['type'] === 'warning' ? '#f59e0b' : ($ann['type'] === 'success' ? '#10b981' : '#3b82f6')) ?>; padding: 1.2rem 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px; position: relative;">
+            <div style="background: var(--card-bg); border-left: 5px solid <?= $ann['type'] === 'danger' ? '#ef4444' : ($ann['type'] === 'warning' ? '#f59e0b' : ($ann['type'] === 'success' ? '#10b981' : 'var(--primary-color)')) ?>; padding: 1.5rem; border-radius: var(--radius-premium); margin-bottom: 2rem; box-shadow: var(--glass-shadow); display: flex; align-items: center; gap: 15px; position: relative; border: 1px solid var(--glass-border);">
                 <span style="font-size: 1.5rem;">
                     <?php 
                         if ($ann['type'] === 'danger') echo '🚨';
@@ -159,7 +159,7 @@ for ($i = 6; $i >= 0; $i--) {
     <!-- Dashboard Stats Grid -->
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:1.5rem; margin-bottom:2.5rem;">
         <!-- Leads Card -->
-        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--primary-color);">
+        <div class="content-card" style="display:flex; align-items:center; gap:20px; border-left: 5px solid var(--primary-color);">
             <div style="width:55px; height:55px; border-radius:15px; background:var(--primary-glow); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--primary-color);">📈</div>
             <div>
                 <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Leads</div>
@@ -168,7 +168,7 @@ for ($i = 6; $i >= 0; $i--) {
         </div>
 
         <!-- Staff Card -->
-        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--secondary-color);">
+        <div class="content-card" style="display:flex; align-items:center; gap:20px; border-left: 5px solid var(--secondary-color);">
             <div style="width:55px; height:55px; border-radius:15px; background:rgba(139, 92, 246, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--secondary-color);">👥</div>
             <div>
                 <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Total Staff</div>
@@ -177,7 +177,7 @@ for ($i = 6; $i >= 0; $i--) {
         </div>
 
         <!-- Attendance Card -->
-        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid var(--status-success);">
+        <div class="content-card" style="display:flex; align-items:center; gap:20px; border-left: 5px solid var(--status-success);">
             <div style="width:55px; height:55px; border-radius:15px; background:rgba(16, 185, 129, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--status-success);">✅</div>
             <div>
                 <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Present Today</div>
@@ -186,7 +186,7 @@ for ($i = 6; $i >= 0; $i--) {
         </div>
 
         <!-- Revenue Card -->
-        <div class="content-card" style="margin-bottom:0; display:flex; align-items:center; gap:20px; border-left: 5px solid #ec4899;">
+        <div class="content-card" style="display:flex; align-items:center; gap:20px; border-left: 5px solid #ec4899;">
             <div style="width:55px; height:55px; border-radius:15px; background:rgba(236, 72, 153, 0.1); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:#ec4899;">💰</div>
             <div>
                 <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:4px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Revenue (Est)</div>
@@ -218,7 +218,7 @@ for ($i = 6; $i >= 0; $i--) {
         <!-- Left Column: Tasks & Performance -->
         <div style="display:flex; flex-direction:column; gap:1.5rem;">
             <!-- Follow-up Reminders -->
-            <div class="content-card" style="margin-bottom:0; border-left: 4px solid #f59e0b;">
+            <div class="content-card" style="border-left: 4px solid #f59e0b;">
                 <div class="card-header">
                     <h2>📅 Daily Tasks</h2>
                     <span class="badge" style="background:rgba(245,158,11,0.1); color:#f59e0b;"><?= count($daily_tasks) ?></span>
