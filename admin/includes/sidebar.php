@@ -20,6 +20,20 @@ if ($cid > 0) {
         <div class="logo"><span>Loom</span></div>
         <div style="font-size:.7rem; color:var(--text-muted); margin-top:4px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">Company Panel</div>
     </div>
+    <style>
+        .nav-item.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%) !important;
+            color: #fff !important;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5) !important;
+        }
+        .logo span {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+            -webkit-background-clip: text !important;
+            background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            display: inline-block !important;
+        }
+    </style>
     <nav class="nav-menu">
         <?php 
         if ($role === 'sales_person') {
