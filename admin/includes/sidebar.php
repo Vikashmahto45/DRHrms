@@ -46,6 +46,17 @@ if ($cid > 0) {
             font-weight: 700 !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
         }
+        .sidebar-footer .user-info div {
+            color: #ffffff !important;
+        }
+        .sidebar-footer .btn-outline {
+            color: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+        }
+        .sidebar-footer .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: #ffffff !important;
+        }
     </style>
     <nav class="nav-menu">
         <?php 
