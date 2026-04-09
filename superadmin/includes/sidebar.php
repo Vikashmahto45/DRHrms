@@ -37,6 +37,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             font-weight: 700 !important;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
         }
+        .sidebar-footer {
+            background: transparent !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
         .sidebar-footer .user-info div {
             color: #ffffff !important;
         }
