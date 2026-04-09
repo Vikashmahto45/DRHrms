@@ -253,7 +253,7 @@ try {
 
         <div class="header">
             <div>
-                <h1>Overview</h1>
+                <h1>Overview <span style="font-size:0.8rem; color:#10b981; margin-left:10px;">(TEST: SUCCESS)</span></h1>
                 <p style="color: var(--text-muted);">Welcome back to the system control panel.</p>
             </div>
         </div>
