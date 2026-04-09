@@ -112,7 +112,7 @@ try {
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= $css_v ?>">
     <link rel="stylesheet" href="../assets/css/loom_premium_v2.css?v=<?= $css_v ?>">
     <style>
-        body { background: #f1f5f9; }
+        body { background: var(--bg-main); }
 
         .stats-grid {
             display: grid;
@@ -223,7 +223,7 @@ try {
         .sub-row:last-child { border-bottom: none; }
         .sub-row-name { font-weight: 600; color: #334155; flex: 1; }
         .sub-mini-stat { display: flex; gap: 0.5rem; }
-        .mini-chip { font-size: 0.72rem; background: #f1f5f9; padding: 2px 7px; border-radius: 6px; color: #475569; font-weight: 500; white-space: nowrap; }
+        .mini-chip { font-size: 0.72rem; background: var(--bg-main); padding: 2px 7px; border-radius: 6px; color: #475569; font-weight: 500; white-space: nowrap; }
         .mini-chip.rev { background: #f0fdf4; color: #059669; }
         .mini-chip.dsr { background: #eef2ff; color: #6366f1; }
 

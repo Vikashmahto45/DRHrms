@@ -174,7 +174,7 @@ $users = $usersQuery->fetchAll();
                 <input type="hidden" name="role" value="admin">
                 <div class="form-group">
                     <label>System Role *</label>
-                    <input type="text" class="form-control" value="HQ Administrator (HR & Full Access)" readonly style="background:#f8fafc; color:#64748b; cursor:not-allowed;">
+                    <input type="text" class="form-control" value="HQ Administrator (HR & Full Access)" readonly style="background:var(--bg-main); color:#64748b; cursor:not-allowed;">
                 </div>
                 
                 <div class="form-group">

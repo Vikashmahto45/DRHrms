@@ -56,7 +56,7 @@ foreach ($branches as $b) {
         </div>
     </div>
 
-    <div id="pdf-content" style="padding: 10px; background: #f8fafc;">
+    <div id="pdf-content" style="padding: 10px; background: var(--bg-main);">
         <div style="text-align:center; margin-bottom:20px; display:none;" id="pdf-header">
             <h2 style="margin-bottom:5px;">DRHrms Headquarters</h2>
             <p style="color:#64748b;">Franchise Revenue Report — Generated on <?= date('d M, Y') ?></p>
@@ -117,7 +117,7 @@ foreach ($branches as $b) {
                         <td style="font-weight: 600; color: #64748b;"><?= $b['total_transactions'] ?></td>
                         <td>
                             <div style="display:inline-flex; align-items:center; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; font-size:0.8rem; font-weight:700;">
-                                <span style="padding:4px 8px; background:#f1f5f9; color:#475569; border-right:1px solid #e2e8f0;" title="Avg Branch retains <?= $avg_branch_pct ?>%">~<?= $avg_branch_pct ?>%</span>
+                                <span style="padding:4px 8px; background:var(--bg-main); color:#475569; border-right:1px solid #e2e8f0;" title="Avg Branch retains <?= $avg_branch_pct ?>%">~<?= $avg_branch_pct ?>%</span>
                                 <span style="padding:4px 8px; background:#ecfdf5; color:#059669;" title="Avg HQ takes <?= $avg_hq_pct ?>%">~<?= $avg_hq_pct ?>%</span>
                             </div>
                         </td>

@@ -258,7 +258,7 @@ unset($_SESSION['flash_message']);
                             <?php if ($slug): ?>
                                 <div style="display:flex; align-items:center; gap:5px;">
                                     <input type="text" id="url_<?= $c['id'] ?>" value="<?= htmlspecialchars($login_url) ?>" readonly
-                                        style="font-size:0.7rem; padding:3px 6px; border:1px solid #e8edf3; border-radius:6px; background:#f8fafc; color:#374151; width:160px; cursor:pointer;"
+                                        style="font-size:0.7rem; padding:3px 6px; border:1px solid #e8edf3; border-radius:6px; background:var(--bg-main); color:#374151; width:160px; cursor:pointer;"
                                         onclick="this.select()">
                                     <button onclick="copyUrl('url_<?= $c['id'] ?>')"
                                         style="font-size:0.75rem; padding:3px 8px; border-radius:6px; border:1px solid #6366f1; background:#fff; color:#6366f1; cursor:pointer; white-space:nowrap"
@@ -333,7 +333,7 @@ unset($_SESSION['flash_message']);
                 </div>
             </div>
             
-            <div style="margin:1.5rem 0;padding:1.2rem;background:#f8fafc;border:1px solid var(--glass-border);border-radius:12px;">
+            <div style="margin:1.5rem 0;padding:1.2rem;background:var(--bg-main);border:1px solid var(--glass-border);border-radius:12px;">
                 <label style="display:block;margin-bottom:1rem;font-weight:600;font-size:0.95rem;color:var(--primary-color)">Module Access Control</label>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
                     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="leads" checked> Lead CRM Pipeline</label>
@@ -407,7 +407,7 @@ unset($_SESSION['flash_message']);
                 <small style="color:var(--text-muted)">Changing this will break existing login bookmarks.</small>
             </div>
 
-            <div style="margin:1.5rem 0;padding:1.2rem;background:#f8fafc;border:1px solid var(--glass-border);border-radius:12px;">
+            <div style="margin:1.5rem 0;padding:1.2rem;background:var(--bg-main);border:1px solid var(--glass-border);border-radius:12px;">
                 <label style="display:block;margin-bottom:1rem;font-weight:600;font-size:0.95rem;color:var(--primary-color)">Module Access Control</label>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;">
                     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.9rem"><input type="checkbox" name="modules[]" value="leads" id="edit_mod_leads"> Lead CRM Pipeline</label>

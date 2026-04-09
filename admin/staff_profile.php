@@ -132,12 +132,12 @@ $shifts = $shifts->fetchAll();
     <style>
         .profile-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; margin-top: 1rem; }
         .info-section { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem; }
-        .info-row { display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid #f1f5f9; }
+        .info-row { display: flex; justify-content: space-between; padding: 0.8rem 0; border-bottom: 1px solid var(--glass-border); }
         .info-row:last-child { border-bottom: none; }
         .info-label { color: var(--text-muted); font-size: 0.9rem; }
         .info-value { font-weight: 600; color: var(--text-main); }
         .stats-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
-        .stat-mini-box { padding: 1rem; border-radius: 8px; text-align: center; background: #f8f9fa; }
+        .stat-mini-box { padding: 1rem; border-radius: 8px; text-align: center; background: var(--bg-main); }
         
         @media print {
             .sidebar, .top-bar, .page-header button, .modal-overlay, .badge, .btn { display: none !important; }

@@ -73,7 +73,7 @@ foreach ($leads as $lead) {
         }
         
         .kanban-column {
-            background: #f1f5f9;
+            background: var(--bg-main);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             width: 320px;

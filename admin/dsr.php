@@ -172,9 +172,9 @@ foreach ($reports as $r) {
         @media (max-width: 992px) { .dsr-grid { grid-template-columns: 1fr; } }
         
         .timeline-card { background: #fff; border: 1px solid var(--glass-border); border-radius: 12px; margin-bottom: 1.5rem; overflow: hidden; }
-        .timeline-header { padding: 1.2rem 1.5rem; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
-        .timeline-header:hover { background: #f1f5f9; }
-        .timeline-body { display: none; padding: 1.5rem; border-top: 1px solid var(--glass-border); background: #fafafa; }
+        .timeline-header { padding: 1.2rem 1.5rem; background: var(--bg-main); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .timeline-header:hover { background: rgba(79, 70, 229, 0.05); }
+        .timeline-body { display: none; padding: 1.5rem; border-top: 1px solid var(--glass-border); background: var(--card-bg); }
         .timeline-body.open { display: block; }
         
         .visit-event { position: relative; padding-left: 30px; margin-bottom: 25px; }
@@ -225,11 +225,11 @@ foreach ($reports as $r) {
             <div class="content-card">
                 <div class="card-header"><h2>📊 Portfolio Summary</h2></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 2rem;">
-                    <div style="padding:1.5rem; background:#f8fafc; border-radius:12px; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border);">
                         <div style="font-size:2rem; font-weight:800; color:var(--primary-color)"><?= count($grouped_clients) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Active Clients</div>
                     </div>
-                    <div style="padding:1.5rem; background:#f8fafc; border-radius:12px; text-align:center;">
+                    <div style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border);">
                         <div style="font-size:2rem; font-weight:800; color:#10b981;"><?= count($reports) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Total DSR Visits</div>
                     </div>
@@ -300,7 +300,7 @@ foreach ($reports as $r) {
                                         <div style="margin-bottom:15px;">
                                             <p style="font-size:0.95rem; color:#1e293b; margin: 0 0 8px 0; line-height:1.6;"><?= nl2br(htmlspecialchars($v['notes'])) ?></p>
                                             <?php if ($v['project_details']): ?>
-                                                <div style="background:#f8fafc; padding:10px; border-left:3px solid #6366f1; border-radius:4px; font-size:0.85rem; color:#475569;">
+                                                <div style="background:var(--bg-main); padding:10px; border-left:3px solid var(--primary-color); border-radius:4px; font-size:0.85rem; color:#475569;">
                                                     <strong>Project Details:</strong><br>
                                                     <?= nl2br(htmlspecialchars($v['project_details'])) ?>
                                                 </div>
@@ -402,7 +402,7 @@ foreach ($reports as $r) {
             </div>
 
             <!-- Multi-Product Interface -->
-            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
+            <div style="background:var(--bg-main); padding:15px; border-radius:8px; margin-bottom:15px; border: 1px solid var(--glass-border);">
                 <label style="font-weight:600; color:#475569; display:block; margin-bottom:10px;">Select Products & Services</label>
                 <div id="productRows">
                     <div class="form-row product-item-row" style="margin-bottom:10px;">

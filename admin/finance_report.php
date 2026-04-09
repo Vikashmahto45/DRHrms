@@ -56,7 +56,7 @@ $ledger = $stmt->fetchAll();
         <button onclick="downloadPDF()" class="btn btn-primary" style="padding:0.6rem 1.2rem;">📄 Download PDF</button>
     </div>
 
-    <div id="pdf-content" style="padding: 10px; background: #f8fafc;">
+    <div id="pdf-content" style="padding: 10px; background: var(--bg-main);">
         <div style="text-align:center; margin-bottom:20px; display:none;" id="pdf-header">
             <h2 style="margin-bottom:5px;">Branch Finance Report</h2>
             <p style="color:#64748b;">Generated on <?= date('d M, Y') ?></p>

@@ -43,13 +43,13 @@ while($row = $hol_stmt->fetch()) {
     <style>
         .matrix-table { border-collapse: collapse; font-size: 0.75rem; width: 100%; table-layout: fixed; }
         .matrix-table th, .matrix-table td { border: 1px solid #e2e8f0; padding: 4px; text-align: center; }
-        .matrix-table th:first-child, .matrix-table td:first-child { position: sticky; left: 0; background: #fff; z-index: 10; width: 120px; text-align: left; font-size: 0.8rem; }
-        .day-header { width: 30px; min-width: 30px; font-weight: 700; background: #f8fafc; }
+        .matrix-table th:first-child, .matrix-table td:first-child { position: sticky; left: 0; background: var(--card-bg); z-index: 10; width: 120px; text-align: left; font-size: 0.8rem; }
+        .day-header { width: 30px; min-width: 30px; font-weight: 700; background: var(--bg-main); }
         .status-P { background: #dcfce7; color: #166534; } /* Present */
         .status-L { background: #fef9c3; color: #854d0e; } /* Late */
         .status-A { background: #fee2e2; color: #991b1b; } /* Absent */
         .status-H { background: #e0e7ff; color: #3730a3; } /* Holiday */
-        .weekend { background: #f1f5f9; }
+        .weekend { background: var(--bg-main); }
     </style>
 </head>
 <body>

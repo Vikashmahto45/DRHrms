@@ -147,7 +147,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:ce
 .card{background:#fff;border-radius:24px;padding:2.5rem 2.5rem;
       box-shadow:0 10px 25px -5px rgba(0, 0, 0, 0.05);border:1px solid rgba(79,70,229,0.1)}
 /* Tabs */
-.tabs{display:flex;background:#f1f5f9;border-radius:12px;padding:4px;margin-bottom:1.75rem;gap:4px}
+.tabs{display:flex;background:#f5f7ff;border-radius:12px;padding:4px;margin-bottom:1.75rem;gap:4px}
 .tab-btn{flex:1;border:none;background:none;padding:.6rem .75rem;border-radius:9px;
          font-size:.83rem;font-weight:600;cursor:pointer;transition:all .25s;color:#64748b}
 .tab-btn.active{background:#fff;color:#4f46e5;box-shadow:0 10px 25px -5px rgba(0, 0, 0, 0.05)}
@@ -159,7 +159,7 @@ body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:ce
 .fg{margin-bottom:.9rem}
 label{display:block;font-size:.78rem;font-weight:600;color:#475569;margin-bottom:.35rem}
 input[type=email],input[type=password]{width:100%;padding:.8rem 1rem;border:1.5px solid #e2e8f0;border-radius:12px;
-  font-size:.9rem;font-family:inherit;transition:all .3s ease;outline:none;background:#f8fafc}
+  font-size:.9rem;font-family:inherit;transition:all .3s ease;outline:none;background:#f5f7ff}
 input:focus{border-color:#4f46e5;box-shadow:0 0 0 4px rgba(79,70,229,0.1);background:#fff}
 .pw{position:relative}.pw input{padding-right:40px}
 .eye{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;

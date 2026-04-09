@@ -130,7 +130,7 @@
     cursor: pointer;
     padding: 0.4rem 0.8rem;
     border-radius: 30px;
-    background: #f8fafc;
+    background: var(--bg-main);
     border: 1px solid var(--glass-border);
     transition: all 0.3s;
 }

@@ -150,7 +150,7 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
 
         <!-- HQ Payment Info -->
         <div class="content-card"
-            style="background: linear-gradient(135deg, #f8fafc, #fff); border-left: 4px solid #3b82f6; margin-bottom: 2rem;">
+            style="background: linear-gradient(135deg, var(--bg-main), #fff); border-left: 4px solid #3b82f6; margin-bottom: 2rem;">
             <div class="card-header">
                 <h4 style="margin:0; display:flex; align-items:center; gap:8px;">🏦 HQ Payment Details</h4>
             </div>
@@ -161,13 +161,13 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                     <strong style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Bank
                         Account Details:</strong>
                     <pre
-                        style="background: #f1f5f9; padding: 12px; border-radius: 8px; font-family: inherit; font-size: 0.9rem; color: #334155; white-space: pre-wrap; margin-top: 8px; border: 1px solid #e2e8f0;"><?= htmlspecialchars($hq_bank_details) ?></pre>
+                        style="background: var(--bg-main); padding: 12px; border-radius: 8px; font-family: inherit; font-size: 0.9rem; color: #334155; white-space: pre-wrap; margin-top: 8px; border: 1px solid #e2e8f0;"><?= htmlspecialchars($hq_bank_details) ?></pre>
                 </div>
                 <div>
                     <strong style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">UPI & QR
                         Code:</strong>
                     <div
-                        style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 8px; border: 1px solid #e2e8f0; display:flex; align-items:center; gap: 1rem;">
+                        style="background: var(--bg-main); padding: 12px; border-radius: 8px; margin-top: 8px; border: 1px solid #e2e8f0; display:flex; align-items:center; gap: 1rem;">
                         <?php if ($hq_upi_qr): ?>
                             <div style="background:#fff; padding:4px; border-radius:6px; border:1px solid #cbd5e1;">
                                 <img src="<?= BASE_URL ?>assets/uploads/qr/<?= htmlspecialchars($hq_upi_qr) ?>"
@@ -217,7 +217,7 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
 
                     <!-- Hidden Fields for New Project -->
                     <div id="newProjectFields"
-                        style="display:none; background:#f8fafc; padding:15px; border-radius:8px; border:1px dashed #cbd5e1; margin-bottom:1.5rem;">
+                        style="display:none; background:var(--bg-main); padding:15px; border-radius:8px; border:1px dashed #cbd5e1; margin-bottom:1.5rem;">
                         <h5 style="margin-top:0; font-size:0.9rem; color:var(--text-main);">New Project Details</h5>
                         <div class="form-group">
                             <label>Client Name *</label>
@@ -233,7 +233,7 @@ $hq_upi_qr = $pdo->query("SELECT setting_value FROM system_settings WHERE settin
                             <div class="form-group" style="flex:1;">
                                 <label>Commission Percentage (%)</label>
                                 <input type="number" step="0.01" name="commission_percent" id="commission_percent"
-                                    class="form-control" style="background-color: #f1f5f9; cursor: not-allowed;" readonly placeholder="Fixed by HQ">
+                                    class="form-control" style="background-color: var(--bg-main); cursor: not-allowed;" readonly placeholder="Fixed by HQ">
                             </div>
                         </div>
                     </div>

@@ -23,7 +23,7 @@ $stmt->execute([$lead_id, $cid]);
 $lead = $stmt->fetch();
 
 if (!$lead) {
-    die("<div style='background:#f1f5f9;color:var(--text-main);min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;'>
+    die("<div style='background:var(--bg-main);color:var(--text-main);min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:sans-serif;'>
             <div style='text-align:center;'>
                 <h2 style='color:#ef4444'>Lead Not Found</h2>
                 <p style='color:var(--text-muted)'>The lead record you are looking for does not exist or has been removed.</p>
@@ -140,7 +140,7 @@ function getSourceBadge($source) {
         .timeline-item::before { content: ""; position: absolute; left: -2.45rem; top: 0.25rem; width: 12px; height: 12px; background: var(--primary-color); border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(99,102,241,0.2); }
         .timeline-item .time { font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 6px; }
         .timeline-item .event-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; display: block; color: var(--text-main); }
-        .timeline-item .event-details { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); }
+        .timeline-item .event-details { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; background: var(--bg-main); padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border); }
         
         .task-list-mini { list-style: none; padding: 0; }
         .task-list-mini li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--glass-border); font-size: 0.9rem; }
@@ -171,7 +171,7 @@ function getSourceBadge($source) {
                 <label style="font-size: 0.85rem; color: var(--text-muted);">Pipeline Status:</label>
                 <form method="POST">
                     <input type="hidden" name="action" value="change_status">
-                    <select name="status" class="form-control" onchange="this.form.submit()" style="width: 160px; font-weight: 600; background: #f8fafc;">
+                    <select name="status" class="form-control" onchange="this.form.submit()" style="width: 160px; font-weight: 600; background: var(--bg-main);">
                         <option value="New" <?= $lead['status']==='New'?'selected':'' ?>>🔵 New</option>
                         <option value="In Progress" <?= $lead['status']==='In Progress'?'selected':'' ?>>🟡 In Progress</option>
                         <option value="Converted" <?= $lead['status']==='Converted'?'selected':'' ?>>🟢 Converted</option>

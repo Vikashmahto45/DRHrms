@@ -111,7 +111,7 @@ $recent_payments = $pay_stmt->fetchAll();
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime('../assets/css/style.css') ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= filemtime('../assets/css/admin.css') ?>">
     <style>
-        body { background: #f1f5f9; }
+        body { background: var(--bg-main); }
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
         .kpi-card { background: #fff; border-radius: 14px; border: 1px solid #e8edf3; padding: 1.4rem 1.5rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.2s; }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.07); }

@@ -104,7 +104,7 @@ $categories = $stmt->fetchAll();
                     ?>
                     <tr>
                         <td style="font-weight:600;"><?= date('M d, Y', strtotime($e['expense_date'])) ?></td>
-                        <td><span class="badge" style="background:#f1f5f9; color:#475569;"><?= htmlspecialchars($e['category_name']) ?></span></td>
+                        <td><span class="badge" style="background:var(--bg-main); color:#475569;"><?= htmlspecialchars($e['category_name']) ?></span></td>
                         <td style="color:var(--text-muted); font-size:0.9rem; max-width:250px;"><?= htmlspecialchars($e['description']) ?></td>
                         <td><?= htmlspecialchars($e['user_name'] ?? 'System/Unknown') ?></td>
                         <td>
@@ -137,7 +137,7 @@ $categories = $stmt->fetchAll();
                 </tbody>
                 <?php if(count($expenses)): ?>
                 <tfoot>
-                    <tr style="background:#f8fafc;">
+                    <tr style="background:var(--bg-main);">
                         <td colspan="5" style="text-align:right; font-weight:700; font-size:0.9rem; color:var(--text-muted)">Total Approved:</td>
                         <td style="font-weight:800; color:#ef4444; font-size:1.1rem;">₹<?= number_format($total, 2) ?></td>
                     </tr>
