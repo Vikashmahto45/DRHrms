@@ -110,7 +110,7 @@ try {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <?php $css_v = time(); ?>
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= $css_v ?>">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $css_v ?>">
+    <link rel="stylesheet" href="../assets/css/loom_premium_v2.css?v=<?= $css_v ?>">
     <style>
         body { background: #f1f5f9; }
 

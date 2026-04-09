@@ -86,7 +86,7 @@ $announcements = $ann_stmt->fetchAll();
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <?php $css_v = time(); ?>
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= $css_v ?>">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $css_v ?>">
+    <link rel="stylesheet" href="../assets/css/loom_premium_v2.css?v=<?= $css_v ?>">
     <style>
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { padding: 1.5rem; text-align: center; }

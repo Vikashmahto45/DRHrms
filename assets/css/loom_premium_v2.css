@@ -1,0 +1,17 @@
+/* loom_premium_v2.css — Forced Update */
+@import url('admin.css');
+
+.nav-item.active {
+    background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5) !important;
+}
+
+.logo span {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    font-weight: 900;
+}

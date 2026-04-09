@@ -113,7 +113,7 @@ for ($i = 6; $i >= 0; $i--) {
     <title>Admin Dashboard - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="../assets/css/loom_premium_v2.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .chart-container { position: relative; height: 180px; width: 100%; margin-top: 15px; }

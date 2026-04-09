@@ -61,7 +61,7 @@ $my_projects = $my_projects->fetchAll();
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <?php $css_v = time(); ?>
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= $css_v ?>">
-    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $css_v ?>">
+    <link rel="stylesheet" href="../assets/css/loom_premium_v2.css?v=<?= $css_v ?>">
 </head>
 <body>
 <?php include 'includes/sidebar.php'; ?>
