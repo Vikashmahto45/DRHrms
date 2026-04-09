@@ -190,7 +190,7 @@ try {
         .badge-inactive { background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.15); }
 
         .branch-stats { display: grid; grid-template-columns: 1fr 1fr; padding: 1rem 1.4rem; gap: 0.75rem; }
-        .bstat { text-align: center; padding: 0.6rem; background: #f8fafc; border-radius: 10px; }
+        .bstat { text-align: center; padding: 0.6rem; background: var(--bg-main); border-radius: 10px; }
         .bstat-val { font-size: 1.4rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
         .bstat-lbl { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; font-weight: 500; }
         .bstat-val.green { color: #10b981; }
@@ -203,20 +203,20 @@ try {
             justify-content: space-between;
             align-items: center;
             padding: 0.75rem 1.4rem;
-            border-top: 1px solid #f1f5f9;
+            border-top: 1px solid var(--glass-border);
             font-size: 0.8rem;
         }
         .revenue-chip { background: #f0fdf4; color: #059669; font-weight: 700; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; }
         .pending-chip { background: #fff7ed; color: #f59e0b; font-weight: 600; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; }
 
         /* Sub-Branches inside main card */
-        .sub-branches-list { border-top: 1px solid #f1f5f9; }
+        .sub-branches-list { border-top: 1px solid var(--glass-border); }
         .sub-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 0.7rem 1.4rem;
-            border-bottom: 1px solid #f8fafc;
+            border-bottom: 1px solid var(--bg-main);
             gap: 0.5rem;
             font-size: 0.85rem;
         }
@@ -228,10 +228,10 @@ try {
         .mini-chip.dsr { background: #eef2ff; color: #6366f1; }
 
         /* Announcements Management Styles */
-        .announcement-card { background: #fff; padding: 1.5rem; border-radius: 14px; border: 1px solid #e2e8f0; margin-bottom: 2.5rem; }
+        .announcement-card { background: #fff; padding: 1.5rem; border-radius: 14px; border: 1px solid var(--glass-border); margin-bottom: 2.5rem; }
         .announcement-form { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px; align-items: flex-end; margin-top: 1rem; }
         .announcement-list { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px; }
-        .ann-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 10px; font-size: 0.9rem; border-left: 4px solid #64748b; background: #f8fafc; }
+        .ann-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; border-radius: 10px; font-size: 0.9rem; border-left: 4px solid #64748b; background: var(--bg-main); }
         .ann-info { border-color: #3b82f6; }
         .ann-warning { border-color: #f59e0b; }
         .ann-danger { border-color: #ef4444; }
