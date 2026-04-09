@@ -108,7 +108,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin Dashboard - DRHrms</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <?php $css_v = filemtime('../assets/css/style.css'); ?>
+    <?php $css_v = time(); ?>
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= $css_v ?>">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?= $css_v ?>">
     <style>
@@ -249,6 +249,10 @@ try {
             </div>
             <?php unset($_SESSION['sa_flash_message']); ?>
         <?php endif; ?>
+
+        <div style="background: #6366f1; color: #fff; padding: 15px; margin-bottom: 2rem; border-radius: 12px; text-align: center; font-weight: 700; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);">
+            🚀 LIVE DEPLOYMENT TEST: SYSTEM UPDATED SUCCESSFULY AT <?= date('H:i:s') ?>!
+        </div>
 
         <div class="header">
             <div>
