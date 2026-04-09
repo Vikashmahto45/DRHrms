@@ -31,34 +31,34 @@ $current_page = basename($_SERVER['PHP_SELF']);
         }
     </style>
     <nav class="nav-menu">
-        <a href="dashboard.php" class="nav-item <?= $current_page === 'dashboard.php' ? 'active' : '' ?>">
+        <a href="dashboard.php" class="nav-item <?= $current_page === 'dashboard.php' ? 'active' : '' ?>" style="<?= $current_page === 'dashboard.php' ? 'background: #ffff00 !important; color: #000 !important; font-weight: 900 !important; border: 5px solid red !important;' : '' ?>">
             <span class="nav-icon">📊</span> Dashboard
         </a>
-        <a href="finance_stats.php" class="nav-item <?= $current_page === 'finance_stats.php' ? 'active' : '' ?>">
+        <a href="finance_stats.php" class="nav-item <?= $current_page === 'finance_stats.php' ? 'active' : '' ?>" style="<?= $current_page === 'finance_stats.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">📈</span> Financial Overview
         </a>
-        <a href="franchise_revenue.php" class="nav-item <?= $current_page === 'franchise_revenue.php' ? 'active' : '' ?>">
+        <a href="franchise_revenue.php" class="nav-item <?= $current_page === 'franchise_revenue.php' ? 'active' : '' ?>" style="<?= $current_page === 'franchise_revenue.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">💰</span> Franchise Revenue
         </a>
-        <a href="payment_verifications.php" class="nav-item <?= $current_page === 'payment_verifications.php' ? 'active' : '' ?>">
+        <a href="payment_verifications.php" class="nav-item <?= $current_page === 'payment_verifications.php' ? 'active' : '' ?>" style="<?= $current_page === 'payment_verifications.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">💳</span> Verify Branch Sales
         </a>
-        <a href="commission_payouts.php" class="nav-item <?= $current_page === 'commission_payouts.php' ? 'active' : '' ?>">
+        <a href="commission_payouts.php" class="nav-item <?= $current_page === 'commission_payouts.php' ? 'active' : '' ?>" style="<?= $current_page === 'commission_payouts.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">💸</span> Franchise Payouts
         </a>
-        <a href="staff_performance.php" class="nav-item <?= $current_page === 'staff_performance.php' ? 'active' : '' ?>">
+        <a href="staff_performance.php" class="nav-item <?= $current_page === 'staff_performance.php' ? 'active' : '' ?>" style="<?= $current_page === 'staff_performance.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">🏆</span> Staff Leaderboard
         </a>
-        <a href="projects.php" class="nav-item <?= $current_page === 'projects.php' ? 'active' : '' ?>">
+        <a href="projects.php" class="nav-item <?= $current_page === 'projects.php' ? 'active' : '' ?>" style="<?= $current_page === 'projects.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">🏗️</span> Project Tracking
         </a>
-        <a href="attendance.php" class="nav-item <?= $current_page === 'attendance.php' ? 'active' : '' ?>">
+        <a href="attendance.php" class="nav-item <?= $current_page === 'attendance.php' ? 'active' : '' ?>" style="<?= $current_page === 'attendance.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">⏰</span> Attendance
         </a>
-        <a href="main_branch.php" class="nav-item <?= $current_page === 'main_branch.php' ? 'active' : '' ?>">
+        <a href="main_branch.php" class="nav-item <?= $current_page === 'main_branch.php' ? 'active' : '' ?>" style="<?= $current_page === 'main_branch.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">🏢</span> Main Branch
         </a>
-        <a href="sub_branches.php" class="nav-item <?= $current_page === 'sub_branches.php' ? 'active' : '' ?>">
+        <a href="sub_branches.php" class="nav-item <?= $current_page === 'sub_branches.php' ? 'active' : '' ?>" style="<?= $current_page === 'sub_branches.php' ? 'background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important; color: #fff !important; box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;' : '' ?>">
             <span class="nav-icon">🏬</span> Sub-Branches
         </a>
         <a href="admins.php" class="nav-item <?= $current_page === 'admins.php' ? 'active' : '' ?>">
