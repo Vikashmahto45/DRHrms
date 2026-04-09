@@ -13,12 +13,17 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </div>
     <style>
         .nav-item.active {
-            background: linear-gradient(135deg, #4f46e5 0%, #a855f7 100%) !important;
-            color: #fff !important;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.5) !important;
+            background-color: transparent !important;
+            background-image: linear-gradient(135deg, #6366f1 0%, #a855f7 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.5) !important;
+            font-weight: 700 !important;
+        }
+        .nav-item.active .nav-icon {
+            color: #ffffff !important;
         }
         .logo span {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+            background: linear-gradient(135deg, #6366f1, #a855f7) !important;
             -webkit-background-clip: text !important;
             background-clip: text !important;
             -webkit-text-fill-color: transparent !important;
