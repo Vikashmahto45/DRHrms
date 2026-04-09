@@ -54,9 +54,29 @@ if ($cid > 0) {
             color: #ffffff !important;
             opacity: 1 !important;
         }
+        .nav-sub-menu {
+            margin-left: 2.2rem !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+            padding-left: 0.5rem !important;
+            display: none;
+        }
+        .nav-dropdown.open .nav-sub-menu {
+            display: block !important;
+        }
         .nav-sub-item {
             opacity: 0.8 !important;
-            padding-left: 3.5rem !important;
+            padding: 0.6rem 1rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            font-size: 0.85rem !important;
+            border-radius: 8px !important;
+            margin: 2px 0 !important;
+        }
+        .nav-sub-item .nav-icon {
+            font-size: 1rem !important;
+            width: auto !important;
+            height: auto !important;
         }
         .nav-sub-item:hover, .nav-sub-item.active {
             opacity: 1 !important;
@@ -136,46 +156,46 @@ if ($cid > 0) {
             <?php endif; ?>
             <?php if (isModuleEnabled('hrms')): ?>
                 <!-- HRMS Dropdown -->
-                <div class="nav-dropdown <?= in_array($current_page, ['staff.php', 'attendance.php', 'attendance_report.php', 'shifts.php', 'attendance_settings.php']) ? 'open' : '' ?>">
+                <div class="nav-dropdown <?= in_array($current_page, ['staff.php', 'attendance.php', 'attendance_report.php', 'shifts.php', 'attendance_settings.php', 'leave_requests.php', 'attendance_matrix.php', 'holidays.php']) ? 'open' : '' ?>">
                     <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
                         <span><span class="nav-icon">📁</span> HRMS</span>
                         <span class="chevron">▶</span>
                     </div>
                     <div class="nav-sub-menu">
-                        <a href="<?= BASE_URL ?>admin/staff.php" class="nav-sub-item <?= $current_page==='staff.php'?'active':'' ?>">Manage Staff</a>
-                        <a href="<?= BASE_URL ?>admin/leave_requests.php" class="nav-sub-item <?= $current_page==='leave_requests.php'?'active':'' ?>">Leave Requests</a>
-                        <a href="<?= BASE_URL ?>admin/attendance.php" class="nav-sub-item <?= $current_page==='attendance.php'?'active':'' ?>">Daily Attendance</a>
-                        <a href="<?= BASE_URL ?>admin/attendance_matrix.php" class="nav-sub-item <?= $current_page==='attendance_matrix.php'?'active':'' ?>">Attendance Matrix</a>
-                        <a href="<?= BASE_URL ?>admin/attendance_report.php" class="nav-sub-item <?= $current_page==='attendance_report.php'?'active':'' ?>">Monthly Report</a>
-                        <a href="<?= BASE_URL ?>admin/holidays.php" class="nav-sub-item <?= $current_page==='holidays.php'?'active':'' ?>">Holidays</a>
-                        <a href="<?= BASE_URL ?>admin/shifts.php" class="nav-sub-item <?= $current_page==='shifts.php'?'active':'' ?>">Shifts</a>
-                        <a href="<?= BASE_URL ?>admin/attendance_settings.php" class="nav-sub-item <?= $current_page==='attendance_settings.php'?'active':'' ?>">Security</a>
+                        <a href="<?= BASE_URL ?>admin/staff.php" class="nav-sub-item <?= $current_page==='staff.php'?'active':'' ?>"><span class="nav-icon">👥</span> Manage Staff</a>
+                        <a href="<?= BASE_URL ?>admin/leave_requests.php" class="nav-sub-item <?= $current_page==='leave_requests.php'?'active':'' ?>"><span class="nav-icon">📄</span> Leave Requests</a>
+                        <a href="<?= BASE_URL ?>admin/attendance.php" class="nav-sub-item <?= $current_page==='attendance.php'?'active':'' ?>"><span class="nav-icon">📅</span> Daily Attendance</a>
+                        <a href="<?= BASE_URL ?>admin/attendance_matrix.php" class="nav-sub-item <?= $current_page==='attendance_matrix.php'?'active':'' ?>"><span class="nav-icon">📊</span> Attendance Matrix</a>
+                        <a href="<?= BASE_URL ?>admin/attendance_report.php" class="nav-sub-item <?= $current_page==='attendance_report.php'?'active':'' ?>"><span class="nav-icon">🗓️</span> Monthly Report</a>
+                        <a href="<?= BASE_URL ?>admin/holidays.php" class="nav-sub-item <?= $current_page==='holidays.php'?'active':'' ?>"><span class="nav-icon">🏖️</span> Holidays</a>
+                        <a href="<?= BASE_URL ?>admin/shifts.php" class="nav-sub-item <?= $current_page==='shifts.php'?'active':'' ?>"><span class="nav-icon">🕒</span> Shifts</a>
+                        <a href="<?= BASE_URL ?>admin/attendance_settings.php" class="nav-sub-item <?= $current_page==='attendance_settings.php'?'active':'' ?>"><span class="nav-icon">🛡️</span> Security</a>
                     </div>
                 </div>
             <?php endif; ?>
 
-            <!-- Branch Configuration (Phase 44) -->
+            <!-- Branch Configuration -->
             <div class="nav-dropdown <?= in_array($current_page, ['settings_designations.php', 'settings_products.php']) ? 'open' : '' ?>">
                 <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
                     <span><span class="nav-icon">⚙️</span> Configuration</span>
                     <span class="chevron">▶</span>
                 </div>
                 <div class="nav-sub-menu">
-                    <a href="<?= BASE_URL ?>admin/settings_designations.php" class="nav-sub-item <?= $current_page==='settings_designations.php'?'active':'' ?>">Job Designations</a>
-                    <a href="<?= BASE_URL ?>admin/settings_products.php" class="nav-sub-item <?= $current_page==='settings_products.php'?'active':'' ?>">Service Catalog</a>
+                    <a href="<?= BASE_URL ?>admin/settings_designations.php" class="nav-sub-item <?= $current_page==='settings_designations.php'?'active':'' ?>"><span class="nav-icon">👔</span> Job Designations</a>
+                    <a href="<?= BASE_URL ?>admin/settings_products.php" class="nav-sub-item <?= $current_page==='settings_products.php'?'active':'' ?>"><span class="nav-icon">🛠️</span> Service Catalog</a>
                 </div>
             </div>
 
         <?php else: ?>
-            <div class="nav-dropdown <?= in_array($current_page, ['staff_attendance.php', 'apply_leave.php']) ? 'open' : '' ?>">
+            <div class="nav-dropdown <?= in_array($current_page, ['staff_attendance.php', 'apply_leave.php', 'staff_profile.php']) ? 'open' : '' ?>">
                 <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
                     <span><span class="nav-icon">📁</span> My HRMS</span>
                     <span class="chevron">▶</span>
                 </div>
                 <div class="nav-sub-menu">
-                    <a href="<?= BASE_URL ?>admin/staff_attendance.php" class="nav-sub-item <?= $current_page==='staff_attendance.php'?'active':'' ?>">My Attendance</a>
-                    <a href="<?= BASE_URL ?>admin/apply_leave.php" class="nav-sub-item <?= $current_page==='apply_leave.php'?'active':'' ?>">Apply Leave</a>
-                    <a href="<?= BASE_URL ?>admin/staff_profile.php" class="nav-sub-item <?= $current_page==='staff_profile.php'?'active':'' ?>">My Profile</a>
+                    <a href="<?= BASE_URL ?>admin/staff_attendance.php" class="nav-sub-item <?= $current_page==='staff_attendance.php'?'active':'' ?>"><span class="nav-icon">📅</span> My Attendance</a>
+                    <a href="<?= BASE_URL ?>admin/apply_leave.php" class="nav-sub-item <?= $current_page==='apply_leave.php'?'active':'' ?>"><span class="nav-icon">✍️</span> Apply Leave</a>
+                    <a href="<?= BASE_URL ?>admin/staff_profile.php" class="nav-sub-item <?= $current_page==='staff_profile.php'?'active':'' ?>"><span class="nav-icon">👤</span> My Profile</a>
                 </div>
             </div>
         <?php endif; ?>
@@ -188,9 +208,9 @@ if ($cid > 0) {
                 <span class="chevron">▶</span>
             </div>
             <div class="nav-sub-menu">
-                <a href="<?= BASE_URL ?>admin/income_categories.php" class="nav-sub-item <?= $current_page==='income_categories.php'?'active':'' ?>">Income Category</a>
-                <a href="<?= BASE_URL ?>admin/income_list.php" class="nav-sub-item <?= $current_page==='income_list.php'?'active':'' ?>">Income List</a>
-                <a href="<?= BASE_URL ?>admin/add_income.php" class="nav-sub-item <?= $current_page==='add_income.php'?'active':'' ?>">Add Income</a>
+                <a href="<?= BASE_URL ?>admin/income_categories.php" class="nav-sub-item <?= $current_page==='income_categories.php'?'active':'' ?>"><span class="nav-icon">📁</span> Income Category</a>
+                <a href="<?= BASE_URL ?>admin/income_list.php" class="nav-sub-item <?= $current_page==='income_list.php'?'active':'' ?>"><span class="nav-icon">💰</span> Income List</a>
+                <a href="<?= BASE_URL ?>admin/add_income.php" class="nav-sub-item <?= $current_page==='add_income.php'?'active':'' ?>"><span class="nav-icon">💵</span> Add Income</a>
             </div>
         </div>
         <?php endif; ?>
@@ -203,31 +223,26 @@ if ($cid > 0) {
                 <span class="chevron">▶</span>
             </div>
             <div class="nav-sub-menu">
-                <a href="<?= BASE_URL ?>admin/submit_payment.php" class="nav-sub-item <?= $current_page==='submit_payment.php'?'active':'' ?>">Submit Payment</a>
-                <a href="<?= BASE_URL ?>admin/finance_report.php" class="nav-sub-item <?= $current_page==='finance_report.php'?'active':'' ?>">Finance Report</a>
-                <?php if (isModuleEnabled('payroll')): ?>
-                    <a href="#" class="nav-sub-item">Payroll (Soon)</a>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php endif; /* end finance */ ?>
-
-        <!-- Expense Section: shown for all admins including HQ AND sales_person -->
-        <?php if ($role === 'admin' || $role === 'sales_person'): ?>
-        <div class="nav-dropdown <?= in_array($current_page, ['expense_categories.php', 'expense_list.php', 'add_expense.php']) ? 'open' : '' ?>">
-            <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
-                <span><span class="nav-icon">💸</span> Expense</span>
-                <span class="chevron">▶</span>
-            </div>
-            <div class="nav-sub-menu">
-                <a href="<?= BASE_URL ?>admin/expense_categories.php" class="nav-sub-item <?= $current_page==='expense_categories.php'?'active':'' ?>">Expense Category</a>
-                <a href="<?= BASE_URL ?>admin/expense_list.php" class="nav-sub-item <?= $current_page==='expense_list.php'?'active':'' ?>">Expense List</a>
-                <a href="<?= BASE_URL ?>admin/add_expense.php" class="nav-sub-item <?= $current_page==='add_expense.php'?'active':'' ?>">Add Expense</a>
+                <a href="<?= BASE_URL ?>admin/submit_payment.php" class="nav-sub-item <?= $current_page==='submit_payment.php'?'active':'' ?>"><span class="nav-icon">💸</span> Submit Payment</a>
+                <a href="<?= BASE_URL ?>admin/finance_report.php" class="nav-sub-item <?= $current_page==='finance_report.php'?'active':'' ?>"><span class="nav-icon">📉</span> Finance Report</a>
             </div>
         </div>
         <?php endif; ?>
 
-
+        <!-- Expense Section -->
+        <?php if ($role === 'admin' || $role === 'sales_person'): ?>
+        <div class="nav-dropdown <?= in_array($current_page, ['expense_categories.php', 'expense_list.php', 'add_expense.php']) ? 'open' : '' ?>">
+            <div class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
+                <span><span class="nav-icon">📤</span> Expense</span>
+                <span class="chevron">▶</span>
+            </div>
+            <div class="nav-sub-menu">
+                <a href="<?= BASE_URL ?>admin/expense_categories.php" class="nav-sub-item <?= $current_page==='expense_categories.php'?'active':'' ?>"><span class="nav-icon">📂</span> Expense Category</a>
+                <a href="<?= BASE_URL ?>admin/expense_list.php" class="nav-sub-item <?= $current_page==='expense_list.php'?'active':'' ?>"><span class="nav-icon">💸</span> Expense List</a>
+                <a href="<?= BASE_URL ?>admin/add_expense.php" class="nav-sub-item <?= $current_page==='add_expense.php'?'active':'' ?>"><span class="nav-icon">📤</span> Add Expense</a>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <?php if ($role === 'admin'): ?>
         <div class="nav-dropdown <?= in_array($current_page, ['settings.php', 'settings_products.php']) ? 'open' : '' ?>">
@@ -236,8 +251,8 @@ if ($cid > 0) {
                 <span class="chevron">▶</span>
             </div>
             <div class="nav-sub-menu">
-                <a href="<?= BASE_URL ?>admin/settings_products.php" class="nav-sub-item <?= $current_page==='settings_products.php'?'active':'' ?>">Product Catalog</a>
-                <a href="<?= BASE_URL ?>admin/settings.php" class="nav-sub-item <?= $current_page==='settings.php'?'active':'' ?>">General Settings</a>
+                <a href="<?= BASE_URL ?>admin/settings_products.php" class="nav-sub-item <?= $current_page==='settings_products.php'?'active':'' ?>"><span class="nav-icon">📦</span> Product Catalog</a>
+                <a href="<?= BASE_URL ?>admin/settings.php" class="nav-sub-item <?= $current_page==='settings.php'?'active':'' ?>"><span class="nav-icon">⚙️</span> General Settings</a>
             </div>
         </div>
         <?php endif; ?>
