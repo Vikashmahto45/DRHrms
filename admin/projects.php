@@ -275,7 +275,7 @@ $catalog = $svc_stmt->fetchAll();
                         👤 <?= htmlspecialchars($p['salesperson_name']) ?>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <?php if ($p['status'] === 'Pending HQ Review' && $is_hq): ?>
+                        <?php if ($p['status'] === 'Pending HQ Review' && $is_hq && in_array($role, ['admin', 'manager'])): ?>
                             <a href="project_view.php?id=<?= $p['id'] ?>" class="btn btn-sm btn-primary" style="background:#ef4444; border:none;">Verify & Assign HQ Staff</a>
                             <a href="project_view.php?id=<?= $p['id'] ?>#reject_section" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:#ef4444;">Reject</a>
                         <?php else: ?>
