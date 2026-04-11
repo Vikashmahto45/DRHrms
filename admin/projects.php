@@ -361,10 +361,10 @@ $catalog = $svc_stmt->fetchAll();
             <?php endif; ?>
             <?php if ($role !== 'sales_person'): ?>
             <div class="form-group">
-                <label>Assign to Developer (Staff)</label>
+                <label>Assign to Project Staff</label>
                 <div style="display:flex; gap:10px;">
                     <select name="sales_person_id" class="form-control" style="flex:1;">
-                        <option value="">-- No Developer Selected --</option>
+                        <option value="">-- No Staff Selected --</option>
                         <?php 
                         foreach($staff_members as $sm): 
                         ?>
@@ -373,7 +373,7 @@ $catalog = $svc_stmt->fetchAll();
                     </select>
                 </div>
                 <?php if (!$is_hq): ?>
-                    <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and developer assignment is handled by the Main Branch.</p>
+                    <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and staff assignment is handled by the Main Branch.</p>
                 <?php endif; ?>
             </div>
             <?php endif; ?>

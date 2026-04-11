@@ -265,7 +265,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <div style="font-weight:600;"><?= htmlspecialchars($p['client_name']) ?></div>
                         </div>
                         <div>
-                            <label style="font-size:0.8rem; color:var(--text-muted);">ASSIGNED DEVELOPER</label>
+                            <label style="font-size:0.8rem; color:var(--text-muted);">ASSIGNED STAFF</label>
                             <div style="font-weight:600;"><?= htmlspecialchars($p['system_salesperson_name'] ?: 'Unassigned') ?></div>
                         </div>
                         <?php if ($_SESSION['user_role'] === 'admin'): ?>
@@ -362,9 +362,9 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <input type="number" name="advance_paid" class="form-control" value="<?= $p['advance_paid'] ?>" required>
                         </div>
                         <div class="form-group">
-                            <label>Assign Developer (Staff)</label>
+                            <label>Assign Project Staff</label>
                             <select name="sales_person_id" class="form-control" required>
-                                <option value="">-- Select Developer --</option>
+                                <option value="">-- Select Staff Member --</option>
                                 <?php foreach($staff_members as $sm): ?>
                                     <option value="<?= $sm['id'] ?>" <?= $p['sales_person_id'] == $sm['id'] ? 'selected':'' ?>><?= htmlspecialchars($sm['name']) ?></option>
                                 <?php endforeach; ?>
