@@ -8,6 +8,11 @@ $cid = $_SESSION['company_id'];
 $msg = ''; $msgType = '';
 
 // Fetch Limits & Usage
+// AUTO-PATCH: Add phone column if not exists
+try {
+    $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20) AFTER email");
+} catch(Exception $e) { /* Table already updated */ }
+
 $company = $pdo->prepare("SELECT user_limit FROM companies WHERE id = ?");
 $company->execute([$cid]);
 $c_data = $company->fetch();
@@ -25,19 +30,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email = trim($_POST['email'] ?? '');
         $role  = $_POST['role'] ?? 'staff';
         $designation_id = !empty($_POST['designation_id']) ? (int)$_POST['designation_id'] : null;
+        $phone = trim($_POST['phone'] ?? '');
         $pass  = $_POST['password'] ?? '';
 
         if ($name && $email && $pass) {
-            if ($current_usage >= $user_limit) {
+            // Validate Phone & Account Number if provided
+            if (!empty($phone) && !is_numeric($phone)) {
+                $msg = "Phone number must contain only digits."; $msgType = 'error';
+            } elseif ($current_usage >= $user_limit) {
                 $msg = "User limit reached ({$user_limit}). Upgrade your plan to add more staff."; $msgType = 'error';
             } else {
-                try {
+                // Check for duplicate email
+                $dup = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+                $dup->execute([$email]);
+                if ($dup->fetch()) {
+                    $msg = "A user with this email address already exists."; $msgType = 'error';
+                } else {
+                    try {
                     $pdo->beginTransaction();
                     
                     // 1. Create Core User
                     $hash = password_hash($pass, PASSWORD_DEFAULT);
-                    $stmt = $pdo->prepare("INSERT INTO users (company_id,name,email,password,role,designation_id,status) VALUES (?,?,?,?,?,?,'active')");
-                    $stmt->execute([$cid, $name, $email, $hash, $role, $designation_id]);
+                    $stmt = $pdo->prepare("INSERT INTO users (company_id,name,email,phone,password,role,designation_id,status) VALUES (?,?,?,?,?,?,?,'active')");
+                    $stmt->execute([$cid, $name, $email, $phone, $hash, $role, $designation_id]);
                     $new_user_id = $pdo->lastInsertId();
 
                     // 2. Create Employee Details
@@ -48,6 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $c_addr = trim($_POST['current_address'] ?? '');
                     $bank   = trim($_POST['bank_name'] ?? '');
                     $acc_no = trim($_POST['account_number'] ?? '');
+                    if (!empty($acc_no) && !is_numeric($acc_no)) {
+                         throw new Exception("Account number must be numeric.");
+                    }
                     $ifsc   = trim($_POST['ifsc_code'] ?? '');
 
                     $stmt = $pdo->prepare("INSERT INTO employee_details 
@@ -232,6 +250,10 @@ $staff_list = $staff_list->fetchAll();
                         <label>Email *</label>
                         <input type="email" name="email" class="form-control" required placeholder="staff@example.com">
                     </div>
+                    <div class="form-group">
+                        <label>Phone Number *</label>
+                        <input type="number" name="phone" class="form-control" required placeholder="e.g. 9876543210">
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Job Title / Designation</label>
@@ -280,7 +302,7 @@ $staff_list = $staff_list->fetchAll();
                     <div class="form-row">
                         <div class="form-group">
                             <label>Account Number</label>
-                            <input type="text" name="account_number" class="form-control" placeholder="1234567890">
+                            <input type="number" name="account_number" class="form-control" placeholder="1234567890">
                         </div>
                         <div class="form-group">
                             <label>IFSC Code</label>

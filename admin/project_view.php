@@ -288,7 +288,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
                 <div class="content-card" style="margin-top:2rem;">
                     <h3>Project Brief / Scope of Work</h3>
-                    <div style="background:#f8fafc; padding:1.5rem; border-radius:8px; border:1px solid #e2e8f0; margin-top:1rem; font-size:0.95rem; line-height:1.6; color:#334155;">
+                    <div style="background:#f8fafc; padding:1.5rem; border-radius:8px; border:1px solid #e2e8f0; margin-top:1rem; font-size:0.95rem; line-height:1.6; color:#334155; overflow-wrap: break-word; word-break: break-word;">
                         <?= !empty($p['project_description']) ? nl2br(htmlspecialchars($p['project_description'])) : '<em style="color:var(--text-muted)">No description provided.</em>' ?>
                     </div>
                 </div>
