@@ -70,7 +70,7 @@ try {
     }
 
     // 2. Enum Update (Status)
-    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Branch Approval', 'Pending HQ Review', 'Active', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending Branch Approval'");
+    $pdo->exec("ALTER TABLE projects MODIFY COLUMN status ENUM('Pending Branch Approval', 'Pending HQ Review', 'Active', 'Rejected', 'Pending Review', 'On Hold', 'Completed', 'Cancelled') DEFAULT 'Pending HQ Review'");
 
     // 3. Ensure tables exist (Fallback)
     $pdo->exec("CREATE TABLE IF NOT EXISTS projects (
@@ -123,14 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $s_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
             $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
 
-            // 3-STEP APPROVAL LOGIC
-            if ($is_hq) {
-                // If HQ Admin creates it -> Active. If HQ Salesperson creates it -> Pending HQ Review.
-                $status = ($role === 'admin' || $role === 'manager') ? 'Active' : 'Pending HQ Review';
-            } else {
-                // If Sub-branch Admin creates it -> Pending HQ Review. If Sub-branch Salesperson -> Pending Branch Approval.
-                $status = ($role === 'admin' || $role === 'manager') ? 'Pending HQ Review' : 'Pending Branch Approval';
-            }
+            // DIRECT TO HQ REVIEW Logic
+            $status = ($role === 'admin' || $role === 'manager') && $is_hq ? 'Active' : 'Pending HQ Review';
             
             $verified = ($status === 'Active') ? 1 : 0;
 
@@ -157,9 +151,9 @@ if (isset($_GET['verify']) && ($role === 'admin' || $role === 'manager')) {
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-if ($role === 'sales_person') {
-    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? ORDER BY p.created_at DESC");
-    $stmt->execute([$uid]);
+if ($role === 'sales_person' || $role === 'staff') {
+    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? OR p.created_by = ? ORDER BY p.created_at DESC");
+    $stmt->execute([$uid, $uid]);
 } else {
     $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in)) ORDER BY p.created_at DESC");
     $stmt->execute();
@@ -208,7 +202,9 @@ $catalog = $svc_stmt->fetchAll();
         .progress-bar-fill { background: var(--primary-color); height: 100%; transition: width 0.3s; }
         .st-Pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
         .st-Pending-Branch-Approval { background: rgba(99,102,241,0.1); color: #6366f1; }
-        .st-Pending-HQ-Review { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .st-Pending-HQ-Review { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .st-Rejected { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .st-Pending-Review { background: rgba(245,158,11,0.1); color: #f59e0b; }
         .st-Active { background: rgba(16,185,129,0.1); color: #10b981; }
         .st-Hold { background: rgba(107,114,128,0.1); color: #6b7280; }
         .project-card { border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; background: #fff; margin-bottom: 1.5rem; transition: transform 0.2s; }

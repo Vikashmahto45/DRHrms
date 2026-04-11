@@ -45,7 +45,9 @@ foreach($results as $res) {
         .progress-bar-container { background: #e2e8f0; border-radius: 20px; height: 10px; overflow: hidden; margin-top: 5px; }
         .progress-bar-fill { background: var(--primary-color); height: 100%; transition: width 0.3s; }
         .st-Pending { background: rgba(245,158,11,0.1); color: #f59e0b; }
-        .st-Pending-HQ-Review { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .st-Pending-HQ-Review { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .st-Rejected { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .st-Pending-Review { background: rgba(245,158,11,0.1); color: #f59e0b; }
         .st-Active { background: rgba(16,185,129,0.1); color: #10b981; }
         .st-Hold { background: rgba(107,114,128,0.1); color: #6b7280; }
         .st-Completed { background: rgba(16,185,129,0.1); color: #10b981; }

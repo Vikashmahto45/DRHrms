@@ -113,7 +113,7 @@ if ($cid > 0) {
             <span class="nav-icon">📊</span> Dashboard
         </a>
 
-        <?php if ($role === 'sales_person' || $role === 'admin'): ?>
+        <?php if (in_array($role, ['sales_person', 'admin', 'staff'])): ?>
             <a href="projects.php" class="nav-item <?= $current_page==='projects.php'?'active':'' ?>">
                 <span class="nav-icon">🏗️</span> Project Tracking
             </a>

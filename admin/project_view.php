@@ -52,7 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         if ($new_progress >= 0 && $new_progress <= 100) {
             try {
                 $pdo->beginTransaction();
-                $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")->execute([$new_progress, ($new_progress == 100 ? 'Completed' : 'Active'), $pid]);
+                $new_status = ($new_progress == 100) ? 'Pending Review' : 'Active';
+                $pdo->prepare("UPDATE projects SET progress_pct = ?, status = ? WHERE id = ?")->execute([$new_progress, $new_status, $pid]);
                 
                 $pdo->exec("CREATE TABLE IF NOT EXISTS project_logs (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -114,13 +115,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $adv = (float)$_POST['advance_paid'];
         $sp_id = (int)$_POST['sales_person_id'];
         $custom_sp = trim($_POST['custom_sales_name'] ?? '');
+        $s_date = !empty($_POST['start_date']) ? $_POST['start_date'] : null;
+        $e_date = !empty($_POST['end_date']) ? $_POST['end_date'] : null;
         
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE projects SET status = 'Active', is_verified = 1, verified_by = ?, advance_paid = ?, sales_person_id = ?, custom_sales_name = ? WHERE id = ?")
-            ->execute([$uid, $adv, ($sp_id ?: null), $custom_sp, $pid]);
+        $pdo->prepare("UPDATE projects SET status = 'Active', is_verified = 1, verified_by = ?, advance_paid = ?, sales_person_id = ?, custom_sales_name = ?, start_date = ?, end_date = ? WHERE id = ?")
+            ->execute([$uid, $adv, ($sp_id ?: null), $custom_sp, $s_date, $e_date, $pid]);
         
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
-            ->execute([$pid, $uid, "Project verified by HQ. Status set to Active."]);
+            ->execute([$pid, $uid, "Project verified by HQ. Status set to Active. Timeline: $s_date to $e_date"]);
         
         $pdo->commit();
         header("Location: project_view.php?id=$pid&msg=Project Verified and Started"); exit();
@@ -132,12 +135,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     try {
         $reason = trim($_POST['reject_reason'] ?? 'No reason provided.');
         $pdo->beginTransaction();
-        $pdo->prepare("UPDATE projects SET status = 'Cancelled', is_verified = 0 WHERE id = ?")->execute([$pid]);
+        $pdo->prepare("UPDATE projects SET status = 'Rejected', is_verified = 0 WHERE id = ?")->execute([$pid]);
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
             ->execute([$pid, $uid, "PROJECT REJECTED by HQ. Reason: $reason"]);
         $pdo->commit();
         header("Location: project_view.php?id=$pid&msg=Project Rejected"); exit();
     } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); }
+}
+
+// Handle Re-submission (Creator Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'resubmit_project') {
+    if ($p['created_by'] == $uid && $p['status'] === 'Rejected') {
+        try {
+            $pdo->prepare("UPDATE projects SET status = 'Pending HQ Review' WHERE id = ?")->execute([$pid]);
+            $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+                ->execute([$pid, $uid, "Project re-submitted for HQ Review."]);
+            header("Location: project_view.php?id=$pid&msg=Project Re-submitted"); exit();
+        } catch (Exception $e) { $msg = $e->getMessage(); }
+    }
+}
+
+// Handle Final Completion Approval (HQ Only)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_completion' && $is_hq_admin) {
+    try {
+        $pdo->prepare("UPDATE projects SET status = 'Completed', progress_pct = 100 WHERE id = ?")->execute([$pid]);
+        $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
+            ->execute([$pid, $uid, "Project completion verified and approved by HQ."]);
+        header("Location: project_view.php?id=$pid&msg=Project Marked as Completed"); exit();
+    } catch (Exception $e) { $msg = $e->getMessage(); }
 }
 
 // Handle Project Edit (HQ or Creator)
@@ -255,14 +280,14 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <div style="font-weight:600; color:#6366f1;"><?= number_format($p['commission_percent'], 2) ?>%</div>
                         </div>
                         <?php endif; ?>
-                        <div>
-                            <label style="font-size:0.8rem; color:var(--text-muted);">START DATE</label>
-                            <div style="font-weight:600;"><?= $p['start_date'] ? date('d M, Y', strtotime($p['start_date'])) : 'Not Set' ?></div>
                         </div>
-                        <div>
-                            <label style="font-size:0.8rem; color:var(--text-muted);">EST. DEADLINE</label>
-                            <div style="font-weight:600; color:#ef4444;"><?= $p['end_date'] ? date('d M, Y', strtotime($p['end_date'])) : 'No Deadline' ?></div>
-                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card" style="margin-top:2rem;">
+                    <h3>Project Brief / Scope of Work</h3>
+                    <div style="background:#f8fafc; padding:1.5rem; border-radius:8px; border:1px solid #e2e8f0; margin-top:1rem; font-size:0.95rem; line-height:1.6; color:#334155;">
+                        <?= !empty($p['project_description']) ? nl2br(htmlspecialchars($p['project_description'])) : '<em style="color:var(--text-muted)">No description provided.</em>' ?>
                     </div>
                 </div>
 
@@ -299,7 +324,19 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
 
             <!-- Right: Action Form -->
             <div>
-                <!-- STEP 1: Branch Approval (Only visible to Sub-branch Admin if Pending Branch Approval) -->
+                <!-- HQ Final Completion Review -->
+                <?php if ($is_hq_admin && $p['status'] === 'Pending Review'): ?>
+                <div class="content-card" style="border: 2px solid #10b981; margin-bottom:1.5rem; background: #f0fdf4;">
+                    <h3 style="color:#10b981;">Final Completion Review</h3>
+                    <p style="font-size:0.85rem; color: #15803d; margin: 0.5rem 0 1.5rem 0;">Confirm that all project requirements have been met before closing.</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="approve_completion">
+                        <button type="submit" class="btn btn-primary" style="width:100%; background:#10b981; border:none;">Approve & Close Project</button>
+                    </form>
+                </div>
+                <?php endif; ?>
+
+                <!-- STEP 1: Branch Approval (Deprecated but kept for logic safety) -->
                 <?php if ($p['status'] === 'Pending Branch Approval' && !$is_hq && ($role === 'admin' || $role === 'manager')): ?>
                 <div class="content-card" style="border: 2px solid #6366f1; margin-bottom:1.5rem;">
                     <h3 style="color:#6366f1;">Branch Admin Review</h3>
@@ -332,6 +369,16 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             </select>
                             <input type="text" name="custom_sales_name" list="sp_list" class="form-control" value="<?= htmlspecialchars($p['custom_sales_name'] ?? '') ?>" placeholder="Or Custom Name" style="margin-top:10px;">
                         </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex:1;">
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" class="form-control" value="<?= $p['start_date'] ?: date('Y-m-d') ?>" required>
+                            </div>
+                            <div class="form-group" style="flex:1;">
+                                <label>Target Deadline</label>
+                                <input type="date" name="end_date" class="form-control" value="<?= $p['end_date'] ?>" required>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn-primary" style="width:100%;">
                             <?= $p['status'] === 'Pending HQ Review' ? 'Verify & Start Project' : 'Update HQ Assignment' ?>
                         </button>
@@ -356,6 +403,17 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                     </div>
                     <p style="font-weight:600; color:#1e293b;">Overall Progress</p>
                 </div>
+
+                <?php if ($p['status'] === 'Rejected' && $p['created_by'] == $uid): ?>
+                <div class="content-card" style="margin-top:1.5rem; border: 2px solid #ef4444; background: #fef2f2;">
+                    <h3 style="color:#ef4444;">Project Rejected</h3>
+                    <p style="font-size:0.85rem; color:#b91c1c; margin-bottom:1.5rem;">The Main Branch has rejected this project. Please review the reason in the timeline below, update the project details if needed, and re-submit.</p>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="resubmit_project">
+                        <button type="submit" class="btn btn-primary" style="width:100%; background:#ef4444; border:none;">Re-submit for Review</button>
+                    </form>
+                </div>
+                <?php endif; ?>
 
                 <?php if ($p['status'] !== 'Completed' && $is_origin_branch): ?>
                 <div class="content-card" style="margin-top:1.5rem; border-top: 5px solid #f59e0b;">
@@ -389,9 +447,14 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                     </form>
                 </div>
                 <?php elseif ($p['status'] === 'Pending HQ Review'): ?>
-                    <div class="content-card" style="margin-top:1.5rem; text-align:center; padding:2rem; background:#fef2f2; border:1px dashed #ef4444;">
-                        <p style="color:#b91c1c; font-weight:600; font-size:0.9rem;">Awaiting HQ Review</p>
-                        <p style="font-size:0.8rem; color:#7f1d1d;">Work will begin once the Main Branch verifies the advance payment and assigns staff.</p>
+                    <div class="content-card" style="margin-top:1.5rem; text-align:center; padding:2rem; background:#eff6ff; border:1px dashed #3b82f6;">
+                        <p style="color:#1e40af; font-weight:600; font-size:0.9rem;">Awaiting HQ Review</p>
+                        <p style="font-size:0.8rem; color:#1d4ed8;">HQ Main Branch will verify payment and assign staff soon.</p>
+                    </div>
+                <?php elseif ($p['status'] === 'Pending Review'): ?>
+                    <div class="content-card" style="margin-top:1.5rem; text-align:center; padding:2rem; background:#f0fdf4; border:1px dashed #10b981;">
+                        <p style="color:#15803d; font-weight:600; font-size:0.9rem;">✅ 100% Complete - Under Review</p>
+                        <p style="font-size:0.8rem; color:#166534;">The Main Branch is checking the work. It will be marked as Completed once approved.</p>
                     </div>
                 <?php endif; ?>
             </div>

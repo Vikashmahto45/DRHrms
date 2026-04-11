@@ -107,43 +107,14 @@ $logs = $log_stmt->fetchAll();
                     <h3 style="margin:0;">Project Configuration</h3>
                     <button class="btn btn-sm btn-outline" onclick="document.getElementById('editProjectModal').classList.add('open')">Master Edit</button>
                 </div>
-                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1.5rem; margin-top:1rem;">
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Client</label>
-                        <div style="font-weight:600;"><?= htmlspecialchars($p['client_name']) ?></div>
                     </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Branch Staff</label>
-                        <div style="font-weight:600;"><?= htmlspecialchars($display_salesperson) ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Source</label>
-                        <div style="font-weight:600;"><?= htmlspecialchars($p['source']) ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Total Value</label>
-                        <div style="font-weight:600; color:#10b981;">₹<?= number_format($p['total_value'], 2) ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Advance Paid</label>
-                        <div style="font-weight:600; color:#3b82f6;">₹<?= number_format($p['advance_paid'], 2) ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Commission Rate</label>
-                        <div style="font-weight:600; color:#6366f1;"><?= number_format($p['commission_percent'], 2) ?>%</div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Start Date</label>
-                        <div style="font-weight:600;"><?= $p['start_date'] ? date('d M, Y', strtotime($p['start_date'])) : 'Not Set' ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Target Deadline</label>
-                        <div style="font-weight:600; color:#ef4444;"><?= $p['end_date'] ? date('d M, Y', strtotime($p['end_date'])) : 'No Deadline' ?></div>
-                    </div>
-                    <div>
-                        <label style="font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Verification Status</label>
-                        <div style="font-weight:600;"><?= $p['is_verified'] ? '✅ Verified' : '⏳ Pending HQ Verification' ?></div>
-                    </div>
+                </div>
+            </div>
+
+            <div class="content-card" style="margin-top:2rem;">
+                <h3>Project Brief / Scope of Work</h3>
+                <div style="background:#f8fafc; padding:1.5rem; border-radius:8px; border:1px solid #e2e8f0; margin-top:1rem; font-size:0.95rem; line-height:1.6; color:#334155;">
+                    <?= !empty($p['project_description']) ? nl2br(htmlspecialchars($p['project_description'])) : '<em style="color:var(--text-muted)">No description provided.</em>' ?>
                 </div>
             </div>
 
