@@ -13,9 +13,10 @@ $pid = (int)($_GET['id'] ?? 0);
 $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
 $branch_info->execute([$cid]);
 $is_hq = (bool)$branch_info->fetchColumn();
-$is_hq_admin = ($is_hq && $_SESSION['user_role'] === 'admin');
+$is_hq_mgmt = ($is_hq && in_array($role, ['admin', 'manager']));
+$is_hq_admin = ($is_hq && $role === 'admin'); // Still use this for strictly administrative tasks like Delete
 $is_creator = ($p['created_by'] == $uid);
-$can_manage = ($is_hq_admin || $is_creator);
+$can_manage = ($is_hq_mgmt || $is_creator);
 
 // Fetch Accessible Branches for hierarchy visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
@@ -110,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle Final Verification (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq_admin) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq_mgmt) {
     try {
         $adv = (float)$_POST['advance_paid'];
         $sp_id = (int)$_POST['sales_person_id'];
@@ -131,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle Rejection (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_project' && $is_hq_admin) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_project' && $is_hq_mgmt) {
     try {
         $reason = trim($_POST['reject_reason'] ?? 'No reason provided.');
         $pdo->beginTransaction();
@@ -156,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Handle Final Completion Approval (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_completion' && $is_hq_admin) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_completion' && $is_hq_mgmt) {
     try {
         $pdo->prepare("UPDATE projects SET status = 'Completed', progress_pct = 100 WHERE id = ?")->execute([$pid]);
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
@@ -190,8 +191,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Fetch Staff for assignment dropdown (HQ view)
 $staff_members = [];
-if ($is_hq_admin) {
-    $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
+if ($is_hq_mgmt) {
+    // ONLY fetch Staff (Developers) for assignment list
+    $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role = 'staff' ORDER BY name ASC");
     $sp_stmt->execute([$cid]);
     $staff_members = $sp_stmt->fetchAll();
 }
@@ -263,8 +265,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <div style="font-weight:600;"><?= htmlspecialchars($p['client_name']) ?></div>
                         </div>
                         <div>
-                            <label style="font-size:0.8rem; color:var(--text-muted);">SALES PERSON</label>
-                            <div style="font-weight:600;"><?= htmlspecialchars($display_salesperson) ?></div>
+                            <label style="font-size:0.8rem; color:var(--text-muted);">ASSIGNED DEVELOPER</label>
+                            <div style="font-weight:600;"><?= htmlspecialchars($p['system_salesperson_name'] ?: 'Unassigned') ?></div>
                         </div>
                         <?php if ($_SESSION['user_role'] === 'admin'): ?>
                         <div>
@@ -348,8 +350,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <?php endif; ?>
 
-                <!-- STEP 2: HQ Final Verification (Only visible to HQ Admin when status is ready for them) -->
-                <?php if ($is_hq_admin && $p['status'] !== 'Pending Branch Approval'): ?>
+                <!-- STEP 2: HQ Final Verification (Only visible to HQ Management when status is ready for them) -->
+                <?php if ($is_hq_mgmt && $p['status'] !== 'Pending Branch Approval'): ?>
                 <div class="content-card" style="border: 2px solid var(--primary-color); margin-bottom:1.5rem;">
                     <h3 style="color:var(--primary-color);">HQ Project Management</h3>
                     <p style="font-size:0.85rem; color:var(--text-muted); margin: 0.5rem 0 1.5rem 0;">Confirm payment and assign staff for execution.</p>
@@ -360,14 +362,13 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <input type="number" name="advance_paid" class="form-control" value="<?= $p['advance_paid'] ?>" required>
                         </div>
                         <div class="form-group">
-                            <label>Assign/Re-assign Staff</label>
+                            <label>Assign Developer (Staff)</label>
                             <select name="sales_person_id" class="form-control" required>
-                                <option value="">-- Select Staff Member --</option>
+                                <option value="">-- Select Developer --</option>
                                 <?php foreach($staff_members as $sm): ?>
-                                    <option value="<?= $sm['id'] ?>" <?= $p['sales_person_id'] == $sm['id'] ? 'selected':'' ?>><?= htmlspecialchars($sm['name']) ?> (<?= ucfirst($sm['role']) ?>)</option>
+                                    <option value="<?= $sm['id'] ?>" <?= $p['sales_person_id'] == $sm['id'] ? 'selected':'' ?>><?= htmlspecialchars($sm['name']) ?></option>
                                 <?php endforeach; ?>
                             </select>
-                            <input type="text" name="custom_sales_name" list="sp_list" class="form-control" value="<?= htmlspecialchars($p['custom_sales_name'] ?? '') ?>" placeholder="Or Custom Name" style="margin-top:10px;">
                         </div>
                         <div class="form-row">
                             <div class="form-group" style="flex:1;">

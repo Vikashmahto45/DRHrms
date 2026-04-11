@@ -169,8 +169,8 @@ foreach($results as $res) {
     $projects[] = $res;
 }
 
-// Fetch All Staff/Project Members for assignment (excluding super_admin)
-$sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role IN ('sales_person', 'staff', 'manager') ORDER BY name ASC");
+// Fetch ONLY Developers/Staff for assignment (excluding sales_person and managers)
+$sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role = 'staff' ORDER BY name ASC");
 $sp_stmt->execute([$cid]);
 $staff_members = $sp_stmt->fetchAll();
 
@@ -272,7 +272,7 @@ $catalog = $svc_stmt->fetchAll();
 
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:15px;">
                     <div style="font-size:0.85rem; color:var(--text-muted);">
-                        👤 <?= htmlspecialchars($p['salesperson_name']) ?>
+                        🛠️ <?= htmlspecialchars($p['salesperson_name'] ?: 'Unassigned') ?>
                     </div>
                     <div style="display:flex; gap:10px;">
                         <?php if ($p['status'] === 'Pending HQ Review' && $is_hq && in_array($role, ['admin', 'manager'])): ?>
@@ -361,21 +361,19 @@ $catalog = $svc_stmt->fetchAll();
             <?php endif; ?>
             <?php if ($role !== 'sales_person'): ?>
             <div class="form-group">
-                <label>Assign to Staff Member</label>
+                <label>Assign to Developer (Staff)</label>
                 <div style="display:flex; gap:10px;">
                     <select name="sales_person_id" class="form-control" style="flex:1;">
-                        <option value="">-- No User Selected --</option>
+                        <option value="">-- No Developer Selected --</option>
                         <?php 
-                        // If HQ, show all staff. If Sub, they can't assign (hidden)
                         foreach($staff_members as $sm): 
                         ?>
-                            <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?> (<?= ucfirst($sm['role']) ?>)</option>
+                            <option value="<?= $sm['id'] ?>"><?= htmlspecialchars($sm['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <input type="text" name="custom_sales_name" class="form-control" placeholder="Or Custom Name" style="flex:1;">
                 </div>
                 <?php if (!$is_hq): ?>
-                    <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and staff assignment is handled by the Main Branch.</p>
+                    <p style="font-size:0.75rem; color:#ef4444; margin-top:5px;">⚠️ Verification and developer assignment is handled by the Main Branch.</p>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
