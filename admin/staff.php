@@ -81,11 +81,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->rollBack();
                     $msg = "Error: " . $e->getMessage(); $msgType = 'error';
                 }
-            }
-        } else {
-            $msg = "All fields are required."; $msgType = 'error';
-        }
+            } // End duplicate check else
+        } // End main creation logic else
+    } else {
+        $msg = "All fields are required."; $msgType = 'error';
     }
+}
 
     if ($action === 'update') {
         $id    = (int)$_POST['user_id'];
