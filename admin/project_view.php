@@ -14,28 +14,23 @@ $branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?"
 $branch_info->execute([$cid]);
 $is_hq = (bool) $branch_info->fetchColumn();
 $is_hq_mgmt = ($is_hq && in_array($role, ['admin', 'manager']));
-$is_hq_admin = ($is_hq && $role === 'admin'); // Still use this for strictly administrative tasks like Delete
+$is_hq_admin = ($is_hq && $role === 'admin');
 $is_creator = ($p['created_by'] == $uid);
-$can_manage = ($is_hq_mgmt || $is_creator);
+$is_assigned_staff = ($p['sales_person_id'] == $uid);
+$is_branch_mgmt = (!$is_hq && in_array($role, ['admin', 'manager']));
+
+// Can Edit? 
+// 1. HQ Mgmt (Always) 
+// 2. Branch Mgmt (Only if it belongs to their branch hierarchy)
+// 3. Creator (ONLY if rejected)
+$can_edit = $is_hq_mgmt || $is_branch_mgmt || ($is_creator && $p['status'] === 'Rejected');
 
 // Fetch Accessible Branches for hierarchy visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-// Handle Project Delete (HQ Only) - Done at the top to prevent "Project not found" error
-if (isset($_GET['action']) && $_GET['action'] === 'delete' && $is_hq_admin) {
-    try {
-        $pdo->beginTransaction();
-        $pdo->prepare("DELETE FROM project_logs WHERE project_id = ?")->execute([$pid]);
-        $pdo->prepare("DELETE FROM projects WHERE id = ? AND (company_id IN ($cids_in) OR branch_id IN ($cids_in))")->execute([$pid]);
-        $pdo->commit();
-        header("Location: projects.php?msg=Project Deleted Successfully");
-        exit();
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        die($e->getMessage());
-    }
-}
+// Project Delete (HQ Admin) - Removed per user request to restrict deletion to Superadmin only.
+// If deletion is needed, please use the Superadmin Panel.
 
 // Fetch Project
 $stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in))");
@@ -49,9 +44,9 @@ if (!$p) {
 // Determine Salesperson name (System or Custom)
 $display_salesperson = $p['system_salesperson_name'] ?: ($p['custom_sales_name'] ?: 'N/A');
 
-// Handle Progress Update (Only Assigned Staff or Admin)
+// Handle Progress Update (STRICTLY Only Assigned Staff)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_progress') {
-    if ($uid == $p['sales_person_id'] || $is_hq) {
+    if ($is_assigned_staff) {
         $new_progress = (int) $_POST['progress_pct'];
         $comment = trim($_POST['comment'] ?? '');
         $old_progress = $p['progress_pct'];
@@ -192,8 +187,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Project Edit (HQ or Creator)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $can_manage) {
+// Handle Project Edit (HQ mgmt, Branch mgmt, or Creator if rejected)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit_project' && $can_edit) {
     try {
         $pname = trim($_POST['project_name']);
         $client = trim($_POST['client_name']);
@@ -338,10 +333,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <div style="display:flex; align-items:center; gap:15px;">
                     <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
-                    <?php if ($is_hq_admin): ?>
-                        <button class="btn btn-sm btn-outline" style="border-color:#ef4444; color:#ef4444;"
-                            onclick="if(confirm('Are you sure you want to delete this project? All logs will be lost.')) window.location.href='project_view.php?id=<?= $pid ?>&action=delete'">Delete</button>
-                    <?php endif; ?>
+                    <!-- Delete removed for HQ Admins per request -->
                 </div>
             </div>
 
@@ -351,7 +343,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
             <?php if (isset($_GET['error'])): ?>
                 <div class="flash-error"
                     style="margin-bottom:2rem; background:#fee2e2; color:#b91c1c; padding:15px; border-radius:8px; border:1px solid #fecaca;">
-                    <?= htmlspecialchars($_GET['error']) ?></div>
+                    <?= htmlspecialchars($_GET['error']) ?>
+                </div>
             <?php endif; ?>
 
             <div style="display:grid; grid-template-columns: 1fr 380px; gap: 2rem; align-items: start;">
@@ -366,7 +359,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                                 <p style="font-size:0.85rem; color:var(--text-muted); margin:4px 0 0 0;">Basic details
                                     and scope of work</p>
                             </div>
-                            <?php if ($can_manage): ?>
+                            <?php if ($can_edit): ?>
                                 <button class="btn btn-sm btn-outline"
                                     onclick="document.getElementById('editProjectModal').classList.add('open')">Edit
                                     Details</button>
@@ -382,7 +375,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <div>
                                 <div class="info-label">Assigned Staff</div>
                                 <div class="info-value">
-                                    <?= htmlspecialchars($p['system_salesperson_name'] ?: 'Unassigned') ?></div>
+                                    <?= htmlspecialchars($p['system_salesperson_name'] ?: 'Unassigned') ?>
+                                </div>
                             </div>
                             <div>
                                 <div class="info-label">Created On</div>
@@ -402,7 +396,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                                 <div>
                                     <div class="info-label">Commission</div>
                                     <div class="info-value" style="color:#6366f1;">
-                                        <?= number_format($p['commission_percent'], 2) ?>%</div>
+                                        <?= number_format($p['commission_percent'], 2) ?>%
+                                    </div>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -435,11 +430,13 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                                             <?php endif; ?>
                                         </div>
                                         <div style="font-size:0.75rem; color:var(--text-muted);">
-                                            <?= date('M d, h:i A', strtotime($l['created_at'])) ?></div>
+                                            <?= date('M d, h:i A', strtotime($l['created_at'])) ?>
+                                        </div>
                                     </div>
                                     <p
                                         style="font-size:0.9rem; margin:8px 0; color:#475569; line-height:1.5; <?= $l['log_type'] === 'instruction' ? 'background:#fff7ed; padding:12px; border-radius:8px; border:1px dashed #fdba74;' : '' ?>">
-                                        <?= nl2br(htmlspecialchars($l['comment'])) ?></p>
+                                        <?= nl2br(htmlspecialchars($l['comment'])) ?>
+                                    </p>
                                     <div style="font-size:0.75rem; color:var(--text-muted);">
                                         Updated by <span
                                             style="color:var(--primary-color); font-weight:600;"><?= htmlspecialchars($l['updater_name']) ?></span>
@@ -450,7 +447,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             <?php endforeach; ?>
                             <div class="log-item">
                                 <div style="font-size:0.75rem; color:var(--text-muted);">
-                                    <?= date('M d, Y', strtotime($p['created_at'])) ?></div>
+                                    <?= date('M d, Y', strtotime($p['created_at'])) ?>
+                                </div>
                                 <div style="font-weight:600; font-size:0.95rem; margin-top:4px;">🏁 Project Initiated
                                 </div>
                             </div>
@@ -542,8 +540,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                         </div>
                     <?php endif; ?>
 
-                    <!-- Staff Progress Update -->
-                    <?php if ($p['status'] !== 'Pending HQ Review' && ($uid == $p['sales_person_id'] || $is_hq_mgmt) && $p['status'] !== 'Completed'): ?>
+                    <!-- Staff Progress Update (Assigned Staff ONLY) -->
+                    <?php if ($p['status'] !== 'Pending HQ Review' && $is_assigned_staff && $p['status'] !== 'Completed'): ?>
                         <div class="sidebar-card" style="border-top: 4px solid #6366f1;">
                             <h4 style="margin:0 0 1rem 0; font-size:1rem;">🚀 Update Progress</h4>
                             <form method="POST">
@@ -616,7 +614,7 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
         </main>
     </div>
     <!-- Edit Project Modal -->
-    <?php if ($can_manage): ?>
+    <?php if ($can_edit): ?>
         <div class="modal-overlay" id="editProjectModal">
             <div class="modal-box" style="max-width:500px;">
                 <button class="modal-close"
