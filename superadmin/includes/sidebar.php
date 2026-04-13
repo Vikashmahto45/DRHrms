@@ -87,6 +87,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <a href="admins.php" class="nav-item <?= $current_page === 'admins.php' ? 'active' : '' ?>">
             <span class="nav-icon">👨‍💼</span> Manage Admins
         </a>
+        <a href="project_permissions.php" class="nav-item <?= $current_page === 'project_permissions.php' ? 'active' : '' ?>">
+            <span class="nav-icon">👮</span> Action Permissions
+        </a>
         <a href="settings.php" class="nav-item <?= $current_page === 'settings.php' ? 'active' : '' ?>">
             <span class="nav-icon">⚙️</span> System Settings
         </a>

@@ -9,30 +9,11 @@ $cid = $_SESSION['company_id'];
 $role = $_SESSION['user_role'] ?? '';
 $pid = (int) ($_GET['id'] ?? 0);
 
-// Fetch Branch Info
-$branch_info = $pdo->prepare("SELECT is_main_branch FROM companies WHERE id = ?");
-$branch_info->execute([$cid]);
-$is_hq = (bool) $branch_info->fetchColumn();
-$is_hq_mgmt = ($is_hq && in_array($role, ['admin', 'manager']));
-$is_hq_admin = ($is_hq && $role === 'admin');
-$is_creator = ($p['created_by'] == $uid);
-$is_assigned_staff = ($p['sales_person_id'] == $uid);
-$is_branch_mgmt = (!$is_hq && in_array($role, ['admin', 'manager']));
-
-// Can Edit? 
-// 1. HQ Mgmt (Always) 
-// 2. Branch Mgmt (Only if it belongs to their branch hierarchy)
-// 3. Creator (ONLY if rejected)
-$can_edit = $is_hq_mgmt || $is_branch_mgmt || ($is_creator && $p['status'] === 'Rejected');
-
 // Fetch Accessible Branches for hierarchy visibility
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-// Project Delete (HQ Admin) - Removed per user request to restrict deletion to Superadmin only.
-// If deletion is needed, please use the Superadmin Panel.
-
-// Fetch Project
+// Fetch Project FIRST (to fix the ordering bug)
 $stmt = $pdo->prepare("SELECT p.*, u.name as system_salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.id = ? AND (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in))");
 $stmt->execute([$pid]);
 $p = $stmt->fetch();
@@ -41,12 +22,47 @@ if (!$p) {
     die("Project not found.");
 }
 
+// Map Session Role to Permission Role Key
+$role_key = $role;
+if ($role === 'admin' || $role === 'manager') {
+    $role_key = ($is_hq ? 'hq_' : 'branch_') . $role;
+}
+
+// Fetch Dynamic Permissions from DB
+$perm_stmt = $pdo->prepare("SELECT * FROM project_permissions WHERE role_key = ?");
+$perm_stmt->execute([$role_key]);
+$perms = $perm_stmt->fetch() ?: [];
+
+// Defined Dynamic Logic
+$p_can_add      = (bool)($perms['can_add'] ?? 0);
+$p_can_edit     = (bool)($perms['can_edit'] ?? 0);
+$p_can_delete   = (bool)($perms['can_delete'] ?? 0);
+$p_can_progress = (bool)($perms['can_update_progress'] ?? 0);
+$p_can_verify   = (bool)($perms['can_verify'] ?? 0);
+$p_can_instruct = (bool)($perms['can_instruction'] ?? 0);
+
+// Contextual Overrides
+$is_creator = ($p['created_by'] == $uid);
+$is_assigned_staff = ($p['sales_person_id'] == $uid);
+
+// Refined "Can Edit" Logic: 
+// If role has 'can_edit' permission, they can edit. 
+// EXCEPT Sales/Staff who can ONLY edit if they are the creator AND status is Rejected (safety check)
+$can_edit = $p_can_edit;
+if ($role === 'sales_person' && $p_can_edit) {
+    $can_edit = ($is_creator && $p['status'] === 'Rejected');
+}
+
+// Refined "Can Progress" Logic:
+// Only show progress box if user has help or is specifically assigned staff (Maker)
+$can_post_progress = ($p_can_progress && $is_assigned_staff);
+
 // Determine Salesperson name (System or Custom)
 $display_salesperson = $p['system_salesperson_name'] ?: ($p['custom_sales_name'] ?: 'N/A');
 
-// Handle Progress Update (STRICTLY Only Assigned Staff)
+// Handle Progress Update (STRICTLY Dynamic Permission)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_progress') {
-    if ($is_assigned_staff) {
+    if ($can_post_progress) {
         $new_progress = (int) $_POST['progress_pct'];
         $comment = trim($_POST['comment'] ?? '');
         $old_progress = $p['progress_pct'];
@@ -118,8 +134,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Final Verification (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $is_hq_mgmt) {
+// Handle Final Verification (HQ/Dynamic)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'verify_project' && $p_can_verify) {
     try {
         $adv = (float) $_POST['advance_paid'];
         $sp_id = (int) $_POST['sales_person_id'];
@@ -142,8 +158,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Rejection (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_project' && $is_hq_mgmt) {
+// Handle Rejection (HQ/Dynamic)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reject_project' && $p_can_verify) {
     try {
         $reason = trim($_POST['reject_reason'] ?? 'No reason provided.');
         $pdo->beginTransaction();
@@ -174,8 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Final Completion Approval (HQ Only)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_completion' && $is_hq_mgmt) {
+// Handle Final Completion Approval (HQ/Dynamic)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'approve_completion' && $p_can_verify) {
     try {
         $pdo->prepare("UPDATE projects SET status = 'Completed', progress_pct = 100 WHERE id = ?")->execute([$pid]);
         $pdo->prepare("INSERT INTO project_logs (project_id, user_id, comment) VALUES (?,?,?)")
@@ -215,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Fetch Staff for assignment dropdown (HQ view)
 $staff_members = [];
-if ($is_hq_mgmt) {
+if ($p_can_verify) {
     // ONLY fetch Staff (Developers) for assignment list
     $sp_stmt = $pdo->prepare("SELECT id, name, role FROM users WHERE company_id = ? AND role = 'staff' ORDER BY name ASC");
     $sp_stmt->execute([$cid]);
@@ -333,7 +349,10 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                 </div>
                 <div style="display:flex; align-items:center; gap:15px;">
                     <div class="badge st-<?= str_replace(' ', '-', $p['status']) ?>"><?= $p['status'] ?></div>
-                    <!-- Delete removed for HQ Admins per request -->
+                    <?php if ($p_can_delete): ?>
+                        <button class="btn btn-sm btn-outline" style="border-color:#ef4444; color:#ef4444;"
+                            onclick="if(confirm('Are you sure you want to delete this project?')) window.location.href='?id=<?= $pid ?>&action=delete'">Delete</button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -469,8 +488,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                             style="display:inline-block; margin-top:5px;"><?= $p['status'] ?></div>
                     </div>
 
-                    <!-- HQ Management Box -->
-                    <?php if ($is_hq_mgmt && $p['status'] !== 'Pending Branch Approval'): ?>
+                    <!-- HQ Management Box (Dynamic Verification) -->
+                    <?php if ($p_can_verify && $p['status'] !== 'Pending Branch Approval'): ?>
                         <div class="sidebar-card" style="border-top: 4px solid var(--primary-color); margin-bottom:1.5rem;">
                             <h4 style="margin:0 0 1rem 0; font-size:1rem; display:flex; align-items:center; gap:8px;">
                                 🛡️ HQ Control Panel
@@ -540,8 +559,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                         </div>
                     <?php endif; ?>
 
-                    <!-- Staff Progress Update (Assigned Staff ONLY) -->
-                    <?php if ($p['status'] !== 'Pending HQ Review' && $is_assigned_staff && $p['status'] !== 'Completed'): ?>
+                    <!-- Staff Progress Update (Dynamic Permission) -->
+                    <?php if ($p['status'] !== 'Pending HQ Review' && $can_post_progress && $p['status'] !== 'Completed'): ?>
                         <div class="sidebar-card" style="border-top: 4px solid #6366f1;">
                             <h4 style="margin:0 0 1rem 0; font-size:1rem;">🚀 Update Progress</h4>
                             <form method="POST">
@@ -569,8 +588,8 @@ $is_origin_branch = ($_SESSION['company_id'] == $p['branch_id']);
                         </div>
                     <?php endif; ?>
 
-                    <!-- Branch Client Instruction -->
-                    <?php if ($p['status'] !== 'Completed' && $is_origin_branch && $p['status'] !== 'Pending HQ Review'): ?>
+                    <!-- Branch Client Instruction (Dynamic Permission) -->
+                    <?php if ($p['status'] !== 'Completed' && $p_can_instruct && ($is_hq || $is_origin_branch) && $p['status'] !== 'Pending HQ Review'): ?>
                         <div class="sidebar-card" style="border-top: 4px solid #f59e0b; margin-top:1.5rem;">
                             <h4 style="margin:0 0 1rem 0; font-size:1rem; color:#d97706;">💡 Add Instruction</h4>
                             <form method="POST">
