@@ -3,6 +3,7 @@
 require_once '../includes/auth.php';
 require_once '../config/database.php';
 checkAccess(['sales_person', 'admin', 'manager', 'staff']);
+ini_set('display_errors', 1); error_reporting(E_ALL);
 
 $uid  = $_SESSION['sa_user_id'] ?? $_SESSION['user_id'] ?? null;
 $cid  = $_SESSION['company_id'] ?? 0;
@@ -40,6 +41,9 @@ try {
     }
 } catch (Exception $e) { /* Fallback for MySQL compatibility */ }
 
+// Fetch products for dropdown
+$stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
+$stmt->execute([$cid]);
 $all_products = $stmt->fetchAll();
 
 // Fetch Active Staff (for Admin/Manager filtering)
@@ -189,7 +193,7 @@ $reports = $stmt->fetchAll();
 
 // Fetch Items for all reports
 foreach ($reports as &$r) {
-    $it_stmt = $pdo->prepare("SELECT di.*, p.name as product_name FROM dsr_items di JOIN products p ON di.product_id = p.id WHERE di.dsr_id = ?");
+    $it_stmt = $pdo->prepare("SELECT di.*, p.name as product_name FROM dsr_items di LEFT JOIN products p ON di.product_id = p.id WHERE di.dsr_id = ?");
     $it_stmt->execute([$r['id']]);
     $r['items'] = $it_stmt->fetchAll();
     $r['total_deal_value'] = array_sum(array_column($r['items'], 'custom_price'));
