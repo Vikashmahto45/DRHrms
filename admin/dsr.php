@@ -7,7 +7,9 @@ ini_set('display_errors', 1); error_reporting(E_ALL);
 
 $uid  = $_SESSION['sa_user_id'] ?? $_SESSION['user_id'] ?? null;
 $cid  = $_SESSION['company_id'] ?? 0;
-$role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
+$role = strtolower($_SESSION['user_role'] ?? $_SESSION['sa_user_role'] ?? '');
+// Normalize 'sales person' to 'sales_person' if it exists with space
+if ($role === 'sales person') $role = 'sales_person';
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
@@ -48,7 +50,7 @@ $all_products = $stmt->fetchAll();
 
 // Fetch Active Staff (for Admin/Manager filtering)
 $staff_list = [];
-if ($role !== 'sales_person') {
+if (in_array($role, ['admin', 'manager', 'super_admin'])) {
     $stf_stmt = $pdo->prepare("SELECT id, name FROM users WHERE company_id = ? AND role IN ('staff', 'manager', 'sales_person') AND status = 'active' ORDER BY name ASC");
     $stf_stmt->execute([$cid]);
     $staff_list = $stf_stmt->fetchAll();
@@ -169,7 +171,7 @@ if ($role === 'sales_person') {
 }
 
 // Fetch Reports
-if ($role === 'sales_person') {
+if ($role === 'sales_person' || $role === 'staff') {
     $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
     $stmt->execute([$uid]);
 } else {
@@ -271,7 +273,7 @@ foreach ($reports as $r) {
                 <p style="color:var(--text-muted)">Track progressive client timelines and secure Live-Camera field visits.</p>
             </div>
             <div style="display:flex;gap:10px;align-items:center;">
-                <?php if ($role !== 'sales_person'): ?>
+                <?php if (in_array($role, ['admin', 'manager', 'super_admin'])): ?>
                     <select class="form-control no-print" style="width:200px;" onchange="location.href='?staff_id=' + this.value">
                         <option value="">All Sales Staff</option>
                         <?php foreach($staff_list as $stf): ?>
@@ -282,9 +284,7 @@ foreach ($reports as $r) {
                 
                 <a href="../api/crm/export_dsr.php<?= $staff_filter ? '?staff_id='.$staff_filter : '' ?>" class="btn btn-outline no-print">📥 Export to Excel</a>
                 <button onclick="window.print()" class="btn btn-outline">🖨️ Print DSR Timeline</button>
-                <?php if ($role === 'sales_person'): ?>
-                    <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
-                <?php endif; ?>
+                <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
             </div>
         </div>
 
