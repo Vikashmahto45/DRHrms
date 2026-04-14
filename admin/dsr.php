@@ -616,18 +616,27 @@ function confirmDelete(id) {
     // Generate simple list from backend data (we can use the $grouped_clients PHP array)
     let html = '';
     <?php if(!empty($grouped_clients)): ?>
-        <?php foreach($grouped_clients as $name => $v): ?>
+        <?php foreach($grouped_clients as $name => $v): 
+            $last_visit_date = !empty($v) ? $v[0]['visit_date'] : '';
+            $interaction_count = count($v);
+            $total_val = 0;
+            foreach($v as $rep) {
+                if (($rep['deal_status'] ?? '') === 'Closed Won') {
+                    $total_val += (float)($rep['total_deal_value'] ?? 0);
+                }
+            }
+        ?>
             html += `
                 <div style="padding:12px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <div style="font-weight:700; color:var(--text-main);"><?= htmlspecialchars($name) ?></div>
                         <div style="font-size:0.75rem; color:var(--text-muted);">
-                            Last Visit: <?= date('M d, Y', strtotime($v['last_visit'])) ?> | 
-                            <?= count($v['visits']) ?> Interaction(s)
+                            Last Visit: <?= $last_visit_date ? date('M d, Y', strtotime($last_visit_date)) : 'N/A' ?> | 
+                            <?= $interaction_count ?> Interaction(s)
                         </div>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-weight:800; color:var(--primary-color);">₹<?= number_format($v['total_value'], 2) ?></div>
+                        <div style="font-weight:800; color:var(--primary-color);">₹<?= number_format($total_val, 2) ?></div>
                         <div style="font-size:0.75rem; color:#10b981; font-weight:600;">Approved Value</div>
                     </div>
                 </div>
