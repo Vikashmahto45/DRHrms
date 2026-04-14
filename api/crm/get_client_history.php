@@ -21,7 +21,7 @@ if (empty($client_name)) {
 try {
     // Get the most recent DSR for this client within the company
     $stmt = $pdo->prepare("
-        SELECT id, project_details, notes, custom_project_name, deal_status 
+        SELECT id, project_details, notes, deal_status 
         FROM dsr 
         WHERE client_name = ? AND company_id = ? 
         ORDER BY visit_date DESC, created_at DESC 
@@ -33,7 +33,7 @@ try {
     if ($history) {
         // Fetch items (products and prices) for this DSR
         $item_stmt = $pdo->prepare("
-            SELECT product_id, custom_price 
+            SELECT product_id, manual_product_name, custom_price 
             FROM dsr_items 
             WHERE dsr_id = ?
         ");

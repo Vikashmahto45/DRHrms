@@ -21,10 +21,15 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS dsr_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         dsr_id INT NOT NULL,
-        product_id INT NOT NULL,
+        product_id INT NULL,
+        manual_product_name VARCHAR(255) NULL,
         custom_price DECIMAL(15,2) DEFAULT 0.00,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+    
+    // Ensure manual_product_name exists if table was already created
+    $pdo->exec("ALTER TABLE dsr_items MODIFY product_id INT NULL");
+    $pdo->exec("ALTER TABLE dsr_items ADD COLUMN IF NOT EXISTS manual_product_name VARCHAR(255) NULL AFTER product_id");
     
     // Migration: Move existing single product_id/sold_price to dsr_items if not already done
     $checkMigrated = $pdo->query("SELECT COUNT(*) FROM dsr_items")->fetchColumn();
@@ -42,10 +47,8 @@ $all_products = $stmt->fetchAll();
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
     $client = trim($_POST['client_name'] ?? '');
-    $custom_project_name = trim($_POST['custom_project_name'] ?? '');
     $activity_type = trim($_POST['activity_type'] ?? 'Regular Visit');
-    $purpose = trim($_POST['visit_purpose'] ?? '');
-    if (empty($purpose)) { $purpose = $activity_type; } // Default purpose if blank
+    $purpose = $activity_type; // Always use activity type as purpose now
     $deal_status = trim($_POST['deal_status'] ?? 'In Progress');
     $notes = trim($_POST['notes'] ?? '');
     $project_details = trim($_POST['project_details'] ?? '');
@@ -56,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     // Products Array
     $product_ids = $_POST['product_ids'] ?? [];
+    $manual_names = $_POST['manual_names'] ?? [];
     $custom_prices = $_POST['custom_prices'] ?? [];
 
     // Validation: Only Visits require Camera/GPS
@@ -80,16 +84,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, custom_project_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, location_name, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$uid, $cid, $client, $custom_project_name, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $location_name, $date]);
+            // Removed custom_project_name as requested
+            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, location_name, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$uid, $cid, $client, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $location_name, $date]);
             $new_dsr_id = $pdo->lastInsertId();
 
-            // Insert Multi-Products
-            if (!empty($product_ids)) {
-                $item_stmt = $pdo->prepare("INSERT INTO dsr_items (dsr_id, product_id, custom_price) VALUES (?,?,?)");
-                for ($i=0; $i<count($product_ids); $i++) {
-                    if (!empty($product_ids[$i])) {
-                        $item_stmt->execute([$new_dsr_id, (int)$product_ids[$i], (float)$custom_prices[$i]]);
+            // Insert Multi-Products (Catalog + Manual)
+            if (!empty($custom_prices)) {
+                $item_stmt = $pdo->prepare("INSERT INTO dsr_items (dsr_id, product_id, manual_product_name, custom_price) VALUES (?,?,?,?)");
+                for ($i=0; $i<count($custom_prices); $i++) {
+                    $pid = !empty($product_ids[$i]) ? (int)$product_ids[$i] : null;
+                    $mname = !empty($manual_names[$i]) ? trim($manual_names[$i]) : null;
+                    
+                    if ($pid || $mname) {
+                        $item_stmt->execute([$new_dsr_id, $pid, $mname, (float)$custom_prices[$i]]);
                     }
                 }
             }
@@ -125,6 +133,18 @@ if (isset($_GET['convert_project'])) {
             } else { $msg = "Already converted."; $msgType = "warning"; }
         }
     } catch (Exception $e) { $msg = $e->getMessage(); $msgType = "error"; }
+}
+
+// Handle Deletion (Admin/Manager only)
+if (isset($_GET['delete_dsr']) && in_array($role, ['admin', 'manager'])) {
+    $dsr_id = (int)$_GET['delete_dsr'];
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM dsr_items WHERE dsr_id = ?")->execute([$dsr_id]);
+        $pdo->prepare("DELETE FROM dsr WHERE id = ? AND company_id = ?")->execute([$dsr_id, $cid]);
+        $pdo->commit();
+        header("Location: dsr.php?msg=Report deleted successfully&msgType=success"); exit();
+    } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); $msgType = "error"; }
 }
 
 // Fetch Past Clients for Datalist (Salesman Only)
@@ -230,16 +250,30 @@ foreach ($reports as $r) {
             <div class="content-card">
                 <div class="card-header"><h2>📊 Portfolio Summary</h2></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 2rem;">
-                    <div class="stat-box-clickable" onclick="document.querySelector('.dsr-grid > div:last-child').scrollIntoView({behavior:'smooth'})" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
+                    <div class="stat-box-clickable" onclick="showDetails('clients')" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
                         <div style="font-size:2rem; font-weight:800; color:var(--primary-color)"><?= count($grouped_clients) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Active Clients</div>
                     </div>
-                    <div class="stat-box-clickable" onclick="document.querySelector('.dsr-grid > div:last-child').scrollIntoView({behavior:'smooth'})" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
+                    <div class="stat-box-clickable" onclick="showDetails('visits')" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
                         <div style="font-size:2rem; font-weight:800; color:#10b981;"><?= count($reports) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Total DSR Visits</div>
                     </div>
                 </div>
             </div>
+
+            <!-- Stats Details Modal -->
+            <div class="modal-overlay" id="statsDetailsModal">
+                <div class="modal-box" style="max-width:500px; padding:0; overflow:hidden;">
+                    <div style="padding:20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="statsTitle" style="margin:0; font-size:1.1rem;">Details</h3>
+                        <button class="modal-close" onclick="closeStatsModal()" style="position:static; padding:10px;">&times;</button>
+                    </div>
+                    <div id="statsBody" style="max-height:400px; overflow-y:auto; padding:5px;">
+                        <!-- Content via JS -->
+                    </div>
+                </div>
+            </div>
+
             <style>
                 .stat-box-clickable:hover { transform: translateY(-5px); border-color: var(--primary-color) !important; background: #fff !important; box-shadow: var(--glass-shadow); }
             </style>
@@ -319,9 +353,11 @@ foreach ($reports as $r) {
                                         <?php if (!empty($v['items'])): ?>
                                             <div style="border-top:1px dashed #e2e8f0; padding-top:10px; margin-top:10px;">
                                                 <table style="width:100%; font-size:0.85rem;">
-                                                    <?php foreach($v['items'] as $item): ?>
+                                                    <?php foreach($v['items'] as $item): 
+                                                        $disp_name = $item['manual_product_name'] ?: $item['product_name'];
+                                                    ?>
                                                         <tr>
-                                                            <td style="color:var(--text-muted); padding:2px 0;">📦 <?= htmlspecialchars($item['product_name']) ?></td>
+                                                            <td style="color:var(--text-muted); padding:2px 0;">📦 <?= htmlspecialchars($disp_name) ?></td>
                                                             <td style="text-align:right; font-weight:600; color:#10b981;">₹<?= number_format($item['custom_price'], 2) ?></td>
                                                         </tr>
                                                     <?php endforeach; ?>
@@ -333,17 +369,28 @@ foreach ($reports as $r) {
                                             </div>
                                         <?php endif; ?>
                                         
-                                        <?php if ($v['visit_photo']): ?>
-                                            <img src="<?= BASE_URL . $v['visit_photo'] ?>" class="report-pic" alt="Live Capture" onclick="window.open(this.src)">
-                                        <?php endif; ?>
-                                        
-                                        <?php if ($v['latitude']): ?>
-                                            <div class="geo-info" style="margin-top:12px;">
-                                                <a href="https://maps.google.com/?q=<?= $v['latitude'] ?>,<?= $v['longitude'] ?>" target="_blank" style="color:var(--primary-color); text-decoration:none;">
-                                                    📍 View GPS Location (<?= htmlspecialchars($v['latitude']) ?>, <?= htmlspecialchars($v['longitude']) ?>)
-                                                </a>
+                                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:15px;">
+                                            <div>
+                                                <?php if ($v['visit_photo']): ?>
+                                                    <img src="<?= BASE_URL . $v['visit_photo'] ?>" class="report-pic" alt="Live Capture" onclick="window.open(this.src)">
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($v['latitude']): ?>
+                                                    <div class="geo-info" style="margin-top:12px;">
+                                                        <a href="https://maps.google.com/?q=<?= $v['latitude'] ?>,<?= $v['longitude'] ?>" target="_blank" style="color:var(--primary-color); text-decoration:none;">
+                                                            📍 View GPS Location (<?= htmlspecialchars($v['latitude']) ?>, <?= htmlspecialchars($v['longitude']) ?>)
+                                                        </a>
+                                                        <?php if(!empty($v['location_name'])): ?>
+                                                            <br><span style="font-size:0.7rem;"><?= htmlspecialchars($v['location_name']) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
-                                        <?php endif; ?>
+                                            
+                                            <?php if(in_array($role, ['admin', 'manager'])): ?>
+                                                <button onclick="confirmDelete(<?= $v['id'] ?>)" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:#ef4444; background:transparent;">🗑️ Delete Report</button>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -404,36 +451,28 @@ foreach ($reports as $r) {
                         <option value="Closed Lost">Closed Lost</option>
                     </select>
                 </div>
-                <div class="form-group" style="flex:1;">
-                    <label>Purpose / Short Subject</label>
-                    <input type="text" name="visit_purpose" id="purposeInp" class="form-control" placeholder="e.g. Sales pitch, follow up (Optional)">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group" style="flex:1;">
-                    <label>Custom Project Name (Optional)</label>
-                    <input type="text" name="custom_project_name" id="customProjectInp" class="form-control" placeholder="Specific project identifier...">
-                </div>
             </div>
 
             <!-- Multi-Product Interface -->
             <div style="background:var(--bg-main); padding:15px; border-radius:8px; margin-bottom:15px; border: 1px solid var(--glass-border);">
                 <label style="font-weight:600; color:#475569; display:block; margin-bottom:10px;">Select Products & Services</label>
                 <div id="productRows">
-                    <div class="form-row product-item-row" style="margin-bottom:10px;">
-                        <div class="form-group" style="flex:2; margin-bottom:0;">
+                    <div class="form-row product-item-row" style="margin-bottom:10px; flex-wrap: wrap;">
+                        <div class="form-group" style="flex:2; min-width: 200px; margin-bottom:5px;">
                             <select name="product_ids[]" class="form-control" onchange="updateDefaultPrice(this)">
-                                <option value="">-- Select Product --</option>
+                                <option value="">-- Catalog Product --</option>
                                 <?php foreach($all_products as $p): ?>
                                     <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>"><?= htmlspecialchars($p['name']) ?> (₹<?= number_format($p['price'], 0) ?>)</option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="form-group" style="flex:1; margin-bottom:0;">
+                        <div class="form-group" style="flex:2; min-width: 200px; margin-bottom:5px;">
+                            <input type="text" name="manual_names[]" class="form-control" placeholder="Or type manual name...">
+                        </div>
+                        <div class="form-group" style="flex:1; min-width: 100px; margin-bottom:5px;">
                             <input type="number" step="0.01" name="custom_prices[]" class="form-control price-input" placeholder="Price ₹" oninput="calculateTotal()">
                         </div>
-                        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove(); calculateTotal()">✕</button>
+                        <button type="button" class="btn btn-outline" style="border:none; color:#ef4444; margin-bottom:5px;" onclick="this.parentElement.remove(); calculateTotal()">✕</button>
                     </div>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; border-top:1px solid #cbd5e1; padding-top:10px;">
@@ -490,6 +529,51 @@ foreach ($reports as $r) {
 let streamGlobal = null;
 let currentFacingMode = "environment";
 
+function confirmDelete(id) {
+    if (confirm("Are you sure you want to delete this DSR report? This action cannot be undone.")) {
+        window.location.href = `dsr.php?delete_dsr=${id}`;
+    }
+}
+
+ function showDetails(type) {
+    const modal = document.getElementById('statsDetailsModal');
+    const title = document.getElementById('statsTitle');
+    const body = document.getElementById('statsBody');
+    
+    title.innerText = (type === 'clients') ? '📋 Active Clients Overview' : '📊 Total Visit Insights';
+    
+    // Generate simple list from backend data (we can use the $grouped_clients PHP array)
+    let html = '';
+    <?php if(!empty($grouped_clients)): ?>
+        <?php foreach($grouped_clients as $name => $v): ?>
+            html += `
+                <div style="padding:12px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:700; color:var(--text-main);"><?= htmlspecialchars($name) ?></div>
+                        <div style="font-size:0.75rem; color:var(--text-muted);">
+                            Last Visit: <?= date('M d, Y', strtotime($v['last_visit'])) ?> | 
+                            <?= count($v['visits']) ?> Interaction(s)
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; color:var(--primary-color);">₹<?= number_format($v['total_value'], 2) ?></div>
+                        <div style="font-size:0.75rem; color:#10b981; font-weight:600;">Approved Value</div>
+                    </div>
+                </div>
+            `;
+        <?php endforeach; ?>
+    <?php else: ?>
+        html = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No data available yet.</div>';
+    <?php endif; ?>
+
+    body.innerHTML = html;
+    modal.classList.add('open');
+ }
+
+ function closeStatsModal() {
+    document.getElementById('statsDetailsModal').classList.remove('open');
+ }
+
 async function lookupClientHistory() {
     const clientName = document.getElementById('clientNameInp').value;
     if (!clientName) return;
@@ -500,10 +584,9 @@ async function lookupClientHistory() {
 
         if (data && data.status !== 'no_history') {
             // Auto-fill fields
-            document.getElementById('customProjectInp').value = data.custom_project_name || '';
             document.getElementById('notesInp').value = data.notes || '';
             document.getElementById('projectDetailsInp').value = data.project_details || '';
-            document.getElementById('dealStatusSelect').value = data.deal_status || 'Negotiating';
+            document.getElementById('dealStatusSelect').value = data.deal_status || 'Initial Meeting';
 
             // Auto-fill products if any
             if (data.items && data.items.length > 0) {
@@ -513,8 +596,14 @@ async function lookupClientHistory() {
                     addProductRow();
                     const lastRow = container.lastElementChild;
                     const select = lastRow.querySelector('select');
-                    const priceInp = lastRow.querySelector('input');
-                    select.value = item.product_id;
+                    const manualInp = lastRow.querySelector('input[name="manual_names[]"]');
+                    const priceInp = lastRow.querySelector('.price-input');
+                    
+                    if (item.product_id) {
+                        select.value = item.product_id;
+                    } else {
+                        manualInp.value = item.manual_product_name;
+                    }
                     priceInp.value = item.custom_price;
                 });
                 calculateTotal();
@@ -528,16 +617,20 @@ function addProductRow() {
     const row = document.createElement('div');
     row.className = 'form-row product-item-row';
     row.style.marginBottom = '10px';
+    row.style.flexWrap = 'wrap';
     row.innerHTML = `
-        <div class="form-group" style="flex:2; margin-bottom:0;">
+        <div class="form-group" style="flex:2; min-width: 200px; margin-bottom:5px;">
             <select name="product_ids[]" class="form-control" onchange="updateDefaultPrice(this)">
-                <option value="">-- Select Product --</option>
+                <option value="">-- Catalog Product --</option>
                 <?php foreach($all_products as $p): ?>
                     <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>"><?= htmlspecialchars($p['name']) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="flex:1; margin-bottom:0;">
+        <div class="form-group" style="flex:2; min-width: 200px; margin-bottom:5px;">
+            <input type="text" name="manual_names[]" class="form-control" placeholder="Or type manual name...">
+        </div>
+        <div class="form-group" style="flex:1; min-width: 100px; margin-bottom:5px;">
             <input type="number" step="0.01" name="custom_prices[]" class="form-control price-input" placeholder="Price ₹" oninput="calculateTotal()">
         </div>
         <button type="button" class="btn btn-outline" style="border:none; color:#ef4444;" onclick="this.parentElement.remove(); calculateTotal()">✕</button>
