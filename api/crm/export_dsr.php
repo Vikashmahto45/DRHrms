@@ -14,18 +14,29 @@ $role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
+// Handle Staff Filter
+$staff_filter = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
+
 // Fetch Reports (Same logic as dsr.php)
 if ($role === 'sales_person') {
     $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
     $stmt->execute([$uid]);
 } else {
-    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name 
-                           FROM dsr d 
-                           JOIN users u ON d.user_id = u.id 
-                           LEFT JOIN companies c ON d.company_id = c.id 
-                           WHERE d.company_id IN ($cids_in) 
-                           ORDER BY d.visit_date DESC, d.created_at DESC");
-    $stmt->execute();
+    $sql = "SELECT d.*, u.name as staff_name, c.name as company_name 
+            FROM dsr d 
+            JOIN users u ON d.user_id = u.id 
+            LEFT JOIN companies c ON d.company_id = c.id 
+            WHERE d.company_id IN ($cids_in)";
+    
+    $params = [];
+    if ($staff_filter) {
+        $sql .= " AND d.user_id = ?";
+        $params[] = $staff_filter;
+    }
+    
+    $sql .= " ORDER BY d.visit_date DESC, d.created_at DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 }
 $reports = $stmt->fetchAll();
 

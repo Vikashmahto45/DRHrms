@@ -40,10 +40,17 @@ try {
     }
 } catch (Exception $e) { /* Fallback for MySQL compatibility */ }
 
-// Fetch products for dropdown
-$stmt = $pdo->prepare("SELECT id, name, price FROM products WHERE company_id = ? ORDER BY name ASC");
-$stmt->execute([$cid]);
 $all_products = $stmt->fetchAll();
+
+// Fetch Active Staff (for Admin/Manager filtering)
+$staff_list = [];
+if ($role !== 'sales_person') {
+    $stf_stmt = $pdo->prepare("SELECT id, name FROM users WHERE company_id = ? AND role IN ('staff', 'manager', 'sales_person') AND status = 'active' ORDER BY name ASC");
+    $stf_stmt->execute([$cid]);
+    $staff_list = $stf_stmt->fetchAll();
+}
+
+$staff_filter = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
 
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
@@ -162,8 +169,21 @@ if ($role === 'sales_person') {
     $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
     $stmt->execute([$uid]);
 } else {
-    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name, c.name as company_name FROM dsr d JOIN users u ON d.user_id = u.id LEFT JOIN companies c ON d.company_id = c.id WHERE d.company_id IN ($cids_in) ORDER BY d.visit_date DESC, d.created_at DESC");
-    $stmt->execute();
+    $sql = "SELECT d.*, u.name as staff_name, c.name as company_name 
+            FROM dsr d 
+            JOIN users u ON d.user_id = u.id 
+            LEFT JOIN companies c ON d.company_id = c.id 
+            WHERE d.company_id IN ($cids_in)";
+    
+    $params = [];
+    if ($staff_filter) {
+        $sql .= " AND d.user_id = ?";
+        $params[] = $staff_filter;
+    }
+    
+    $sql .= " ORDER BY d.visit_date DESC, d.created_at DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 }
 $reports = $stmt->fetchAll();
 
@@ -246,8 +266,17 @@ foreach ($reports as $r) {
                 <h1>Advanced CRM DSR Tracker</h1>
                 <p style="color:var(--text-muted)">Track progressive client timelines and secure Live-Camera field visits.</p>
             </div>
-            <div style="display:flex;gap:10px;">
-                <a href="../api/crm/export_dsr.php" class="btn btn-outline no-print">📥 Export to Excel</a>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <?php if ($role !== 'sales_person'): ?>
+                    <select class="form-control no-print" style="width:200px;" onchange="location.href='?staff_id=' + this.value">
+                        <option value="">All Sales Staff</option>
+                        <?php foreach($staff_list as $stf): ?>
+                            <option value="<?= $stf['id'] ?>" <?= $staff_filter == $stf['id'] ? 'selected' : '' ?>><?= htmlspecialchars($stf['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif; ?>
+                
+                <a href="../api/crm/export_dsr.php<?= $staff_filter ? '?staff_id='.$staff_filter : '' ?>" class="btn btn-outline no-print">📥 Export to Excel</a>
                 <button onclick="window.print()" class="btn btn-outline">🖨️ Print DSR Timeline</button>
                 <?php if ($role === 'sales_person'): ?>
                     <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
