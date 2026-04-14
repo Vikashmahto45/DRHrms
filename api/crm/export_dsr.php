@@ -14,8 +14,10 @@ $role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-// Handle Staff Filter
+// Handle Filters
 $staff_filter = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
+$start_date = $_GET['start_date'] ?? null;
+$end_date = $_GET['end_date'] ?? null;
 
 // Fetch Reports (Same logic as dsr.php)
 if ($role === 'sales_person') {
@@ -32,6 +34,15 @@ if ($role === 'sales_person') {
     if ($staff_filter) {
         $sql .= " AND d.user_id = ?";
         $params[] = $staff_filter;
+    }
+
+    if ($start_date && $end_date) {
+        $sql .= " AND d.visit_date BETWEEN ? AND ?";
+        $params[] = $start_date;
+        $params[] = $end_date;
+    } elseif ($start_date) {
+        $sql .= " AND d.visit_date >= ?";
+        $params[] = $start_date;
     }
     
     $sql .= " ORDER BY d.visit_date DESC, d.created_at DESC";

@@ -57,6 +57,8 @@ if (in_array($role, ['admin', 'manager', 'super_admin'])) {
 }
 
 $staff_filter = isset($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
+$start_date = $_GET['start_date'] ?? null;
+$end_date = $_GET['end_date'] ?? null;
 
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
@@ -187,6 +189,15 @@ if ($role === 'sales_person' || $role === 'staff') {
         $params[] = $staff_filter;
     }
     
+    if ($start_date && $end_date) {
+        $sql .= " AND d.visit_date BETWEEN ? AND ?";
+        $params[] = $start_date;
+        $params[] = $end_date;
+    } elseif ($start_date) {
+        $sql .= " AND d.visit_date >= ?";
+        $params[] = $start_date;
+    }
+    
     $sql .= " ORDER BY d.visit_date DESC, d.created_at DESC";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -274,17 +285,25 @@ foreach ($reports as $r) {
             </div>
             <div style="display:flex;gap:10px;align-items:center;">
                 <?php if (in_array($role, ['admin', 'manager', 'super_admin'])): ?>
-                    <select class="form-control no-print" style="width:200px;" onchange="location.href='?staff_id=' + this.value">
-                        <option value="">All Sales Staff</option>
-                        <?php foreach($staff_list as $stf): ?>
-                            <option value="<?= $stf['id'] ?>" <?= $staff_filter == $stf['id'] ? 'selected' : '' ?>><?= htmlspecialchars($stf['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <form method="GET" style="display:flex;gap:10px;align-items:center;" class="no-print">
+                        <select name="staff_id" class="form-control" style="width:160px;" onchange="this.form.submit()">
+                            <option value="">All Sales Staff</option>
+                            <?php foreach($staff_list as $stf): ?>
+                                <option value="<?= $stf['id'] ?>" <?= $staff_filter == $stf['id'] ? 'selected' : '' ?>><?= htmlspecialchars($stf['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div style="display:flex;gap:5px;align-items:center;font-size:0.85rem;color:var(--text-muted);">
+                            From: <input type="date" name="start_date" class="form-control" style="width:140px;" value="<?= $start_date ?>" onchange="this.form.submit()">
+                            To: <input type="date" name="end_date" class="form-control" style="width:140px;" value="<?= $end_date ?>" onchange="this.form.submit()">
+                        </div>
+                    </form>
                 <?php endif; ?>
                 
-                <a href="../api/crm/export_dsr.php<?= $staff_filter ? '?staff_id='.$staff_filter : '' ?>" class="btn btn-outline no-print">📥 Export to Excel</a>
+                <a href="../api/crm/export_dsr.php?staff_id=<?= $staff_filter ?>&start_date=<?= $start_date ?>&end_date=<?= $end_date ?>" class="btn btn-outline no-print">📥 Export to Excel</a>
                 <button onclick="window.print()" class="btn btn-outline">🖨️ Print DSR Timeline</button>
-                <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
+                <?php if ($role === 'sales_person'): ?>
+                    <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
+                <?php endif; ?>
             </div>
         </div>
 
