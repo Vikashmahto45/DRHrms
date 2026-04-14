@@ -16,6 +16,8 @@ $msg = ''; $msgType = '';
 try {
     $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS activity_type VARCHAR(50) DEFAULT 'Regular Visit' AFTER visit_purpose");
     $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS project_details TEXT NULL AFTER notes");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS custom_project_name VARCHAR(255) NULL AFTER client_name");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS location_name TEXT NULL AFTER latitude");
     $pdo->exec("CREATE TABLE IF NOT EXISTS dsr_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         dsr_id INT NOT NULL,
@@ -40,13 +42,16 @@ $all_products = $stmt->fetchAll();
 // Handle Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_dsr') {
     $client = trim($_POST['client_name'] ?? '');
+    $custom_project_name = trim($_POST['custom_project_name'] ?? '');
     $activity_type = trim($_POST['activity_type'] ?? 'Regular Visit');
     $purpose = trim($_POST['visit_purpose'] ?? '');
+    if (empty($purpose)) { $purpose = $activity_type; } // Default purpose if blank
     $deal_status = trim($_POST['deal_status'] ?? 'In Progress');
     $notes = trim($_POST['notes'] ?? '');
     $project_details = trim($_POST['project_details'] ?? '');
     $lat = $_POST['latitude'] ?? '';
     $lng = $_POST['longitude'] ?? '';
+    $location_name = $_POST['location_name'] ?? '';
     $date = date('Y-m-d');
 
     // Products Array
@@ -75,8 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$uid, $cid, $client, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $date]);
+            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, custom_project_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, location_name, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$uid, $cid, $client, $custom_project_name, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $location_name, $date]);
             $new_dsr_id = $pdo->lastInsertId();
 
             // Insert Multi-Products
@@ -225,16 +230,19 @@ foreach ($reports as $r) {
             <div class="content-card">
                 <div class="card-header"><h2>📊 Portfolio Summary</h2></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom: 2rem;">
-                    <div style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border);">
+                    <div class="stat-box-clickable" onclick="document.querySelector('.dsr-grid > div:last-child').scrollIntoView({behavior:'smooth'})" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
                         <div style="font-size:2rem; font-weight:800; color:var(--primary-color)"><?= count($grouped_clients) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Active Clients</div>
                     </div>
-                    <div style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border);">
+                    <div class="stat-box-clickable" onclick="document.querySelector('.dsr-grid > div:last-child').scrollIntoView({behavior:'smooth'})" style="padding:1.5rem; background:var(--bg-main); border-radius:12px; text-align:center; border: 1px solid var(--glass-border); cursor:pointer; transition:transform 0.2s;">
                         <div style="font-size:2rem; font-weight:800; color:#10b981;"><?= count($reports) ?></div>
                         <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">Total DSR Visits</div>
                     </div>
                 </div>
             </div>
+            <style>
+                .stat-box-clickable:hover { transform: translateY(-5px); border-color: var(--primary-color) !important; background: #fff !important; box-shadow: var(--glass-shadow); }
+            </style>
 
             <!-- Right: Client Timelines -->
             <div class="content-card" style="padding:0; background:transparent; border:none; box-shadow:none;">
@@ -365,12 +373,13 @@ foreach ($reports as $r) {
             <input type="hidden" name="action" value="submit_dsr">
             <input type="hidden" name="latitude" id="latInp">
             <input type="hidden" name="longitude" id="lngInp">
+            <input type="hidden" name="location_name" id="locNameInp">
             <input type="hidden" name="live_photo_b64" id="photoB64">
             
             <div class="form-row">
                 <div class="form-group" style="flex:2;">
                     <label>Client / Business Name *</label>
-                    <input type="text" name="client_name" list="pastClients" class="form-control" required placeholder="Select existing or type new...">
+                    <input type="text" name="client_name" id="clientNameInp" list="pastClients" class="form-control" required placeholder="Select existing or type new..." autocomplete="off" onchange="lookupClientHistory()">
                 </div>
                 <div class="form-group" style="flex:1;">
                     <label>Activity Type *</label>
@@ -396,8 +405,15 @@ foreach ($reports as $r) {
                     </select>
                 </div>
                 <div class="form-group" style="flex:1;">
-                    <label>Purpose / Short Subject *</label>
-                    <input type="text" name="visit_purpose" class="form-control" required placeholder="e.g. Sales pitch, follow up">
+                    <label>Purpose / Short Subject</label>
+                    <input type="text" name="visit_purpose" id="purposeInp" class="form-control" placeholder="e.g. Sales pitch, follow up (Optional)">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                    <label>Custom Project Name (Optional)</label>
+                    <input type="text" name="custom_project_name" id="customProjectInp" class="form-control" placeholder="Specific project identifier...">
                 </div>
             </div>
 
@@ -433,7 +449,10 @@ foreach ($reports as $r) {
                     <img id="photoPreview">
                     <canvas id="canvasFeed" style="display:none;"></canvas>
                     <div class="cam-overlay" id="camControls">
-                        <button type="button" class="btn btn-primary" onclick="snapPhoto()" style="padding:10px 20px; border-radius:30px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">📸 Snap Photo</button>
+                        <div style="display:flex; justify-content:center; gap:10px;">
+                            <button type="button" class="btn btn-primary" onclick="snapPhoto()" style="padding:10px 20px; border-radius:30px; box-shadow:0 4px 15px rgba(0,0,0,0.3);">📸 Snap Photo</button>
+                            <button type="button" class="btn btn-outline" onclick="toggleCamera()" title="Switch Camera" style="background:#fff; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; padding:0;">🔄</button>
+                        </div>
                     </div>
                     <div class="cam-overlay" id="camRetake" style="display:none;">
                         <button type="button" class="btn btn-outline" onclick="retakePhoto()" style="background:#fff; padding:8px 15px; border-radius:30px; font-weight:bold;">🔄 Retake</button>
@@ -444,11 +463,11 @@ foreach ($reports as $r) {
             <div class="form-row">
                 <div class="form-group" style="flex:1;">
                     <label>Activity Summary / Notes</label>
-                    <textarea name="notes" class="form-control" rows="2" placeholder="What happened in this interaction?"></textarea>
+                    <textarea name="notes" id="notesInp" class="form-control" rows="2" placeholder="What happened in this interaction?"></textarea>
                 </div>
                 <div class="form-group" style="flex:1;">
                     <label>Project Details / Spec</label>
-                    <textarea name="project_details" class="form-control" rows="2" placeholder="Technical specs or requirements..."></textarea>
+                    <textarea name="project_details" id="projectDetailsInp" class="form-control" rows="2" placeholder="Technical specs or requirements..."></textarea>
                 </div>
             </div>
 
@@ -469,6 +488,40 @@ foreach ($reports as $r) {
 
 <script>
 let streamGlobal = null;
+let currentFacingMode = "environment";
+
+async function lookupClientHistory() {
+    const clientName = document.getElementById('clientNameInp').value;
+    if (!clientName) return;
+
+    try {
+        const response = await fetch(`../api/crm/get_client_history.php?client_name=${encodeURIComponent(clientName)}`);
+        const data = await response.json();
+
+        if (data && data.status !== 'no_history') {
+            // Auto-fill fields
+            document.getElementById('customProjectInp').value = data.custom_project_name || '';
+            document.getElementById('notesInp').value = data.notes || '';
+            document.getElementById('projectDetailsInp').value = data.project_details || '';
+            document.getElementById('dealStatusSelect').value = data.deal_status || 'Negotiating';
+
+            // Auto-fill products if any
+            if (data.items && data.items.length > 0) {
+                const container = document.getElementById('productRows');
+                container.innerHTML = ''; // Fresh start
+                data.items.forEach(item => {
+                    addProductRow();
+                    const lastRow = container.lastElementChild;
+                    const select = lastRow.querySelector('select');
+                    const priceInp = lastRow.querySelector('input');
+                    select.value = item.product_id;
+                    priceInp.value = item.custom_price;
+                });
+                calculateTotal();
+            }
+        }
+    } catch (err) { console.error("History lookup failed", err); }
+}
 
 function addProductRow() {
     const container = document.getElementById('productRows');
@@ -539,6 +592,8 @@ function closeDsrModal() {
 }
 
 function startCamera() {
+    if (streamGlobal) streamGlobal.getTracks().forEach(t => t.stop());
+    
     const video = document.getElementById('videoFeed');
     const preview = document.getElementById('photoPreview');
     video.style.display = 'block';
@@ -546,12 +601,20 @@ function startCamera() {
     document.getElementById('camControls').style.display = 'block';
     document.getElementById('camRetake').style.display = 'none';
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
     .then(stream => {
         streamGlobal = stream;
         video.srcObject = stream;
     })
-    .catch(err => console.log("Camera access blocked"));
+    .catch(err => {
+        console.log("Camera access blocked", err);
+        alert("Please enable camera permissions.");
+    });
+}
+
+function toggleCamera() {
+    currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+    startCamera();
 }
 
 function snapPhoto() {
@@ -578,14 +641,32 @@ function retakePhoto() {
     document.getElementById('camRetake').style.display = 'none';
 }
 
+async function reverseGeocode(lat, lng) {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+        const data = await response.json();
+        if (data && data.display_name) {
+            document.getElementById('locNameInp').value = data.display_name;
+            const stat = document.getElementById('locStatus');
+            stat.innerHTML = `✅ ${data.display_name.substring(0, 30)}...`;
+            stat.title = data.display_name;
+        }
+    } catch (err) { console.error("Geocoding failed", err); }
+}
+
 function lockGPS() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
-            document.getElementById('latInp').value = pos.coords.latitude;
-            document.getElementById('lngInp').value = pos.coords.longitude;
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            document.getElementById('latInp').value = lat;
+            document.getElementById('lngInp').value = lng;
+            
             let stat = document.getElementById('locStatus');
-            stat.innerHTML = '✅ GPS Locked';
+            stat.innerHTML = '🕒 Fetching Address...';
             stat.style.color = '#10b981';
+            
+            reverseGeocode(lat, lng);
             document.getElementById('submitDSRBtn').disabled = false;
         }, null, { enableHighAccuracy: true });
     }

@@ -206,6 +206,37 @@
 #notifList .notif-body {
     color: var(--text-muted);
 }
+
+/* Mobile Responsiveness Fixes */
+@media (max-width: 768px) {
+    .top-bar {
+        padding: 0.8rem 1rem;
+    }
+    .search-wrapper {
+        width: 150px;
+    }
+    .profile-name {
+        display: none;
+    }
+    .top-bar-actions {
+        gap: 0.8rem;
+    }
+    .profile-trigger {
+        padding: 0.4rem;
+        gap: 5px;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-wrapper {
+        width: 40px;
+        overflow: hidden;
+    }
+    .search-wrapper input {
+        padding-left: 35px;
+        width: 150px; /* Expands on focus maybe? */
+    }
+}
 </style>
 
 <script>
