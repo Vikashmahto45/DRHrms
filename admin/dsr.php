@@ -4,9 +4,9 @@ require_once '../includes/auth.php';
 require_once '../config/database.php';
 checkAccess(['sales_person', 'admin', 'manager', 'staff']);
 
-$uid = $_SESSION['user_id'];
-$cid = $_SESSION['company_id'];
-$role = $_SESSION['user_role'] ?? '';
+$uid  = $_SESSION['sa_user_id'] ?? $_SESSION['user_id'] ?? null;
+$cid  = $_SESSION['company_id'] ?? 0;
+$role = strtolower($_SESSION['sa_user_role'] ?? $_SESSION['user_role'] ?? '');
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
@@ -18,6 +18,7 @@ try {
     $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS project_details TEXT NULL AFTER notes");
     $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS custom_project_name VARCHAR(255) NULL AFTER client_name");
     $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS location_name TEXT NULL AFTER latitude");
+    $pdo->exec("ALTER TABLE dsr ADD COLUMN IF NOT EXISTS visit_time TIME NULL AFTER visit_date");
     $pdo->exec("CREATE TABLE IF NOT EXISTS dsr_items (
         id INT AUTO_INCREMENT PRIMARY KEY,
         dsr_id INT NOT NULL,
@@ -56,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $lng = $_POST['longitude'] ?? '';
     $location_name = $_POST['location_name'] ?? '';
     $date = date('Y-m-d');
+    $time = date('H:i:s');
 
     // Products Array
     $product_ids = $_POST['product_ids'] ?? [];
@@ -85,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             $pdo->beginTransaction();
             // Removed custom_project_name as requested
-            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, location_name, visit_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $stmt->execute([$uid, $cid, $client, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $location_name, $date]);
+            $stmt = $pdo->prepare("INSERT INTO dsr (user_id, company_id, client_name, activity_type, visit_purpose, deal_status, visit_photo, notes, project_details, latitude, longitude, location_name, visit_date, visit_time) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $stmt->execute([$uid, $cid, $client, $activity_type, $purpose, $deal_status, $photo_path, $notes, $project_details, $lat, $lng, $location_name, $date, $time]);
             $new_dsr_id = $pdo->lastInsertId();
 
             // Insert Multi-Products (Catalog + Manual)
@@ -335,7 +337,12 @@ foreach ($reports as $r) {
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
-                                            <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;"><?= date('M d, Y', strtotime($v['visit_date'])) ?></span>
+                                            <span style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">
+                                                <?= date('M d, Y', strtotime($v['visit_date'])) ?>
+                                                <?php if(!empty($v['visit_time'])): ?>
+                                                    &bull; <?= date('h:i A', strtotime($v['visit_time'])) ?>
+                                                <?php endif; ?>
+                                            </span>
                                         </div>
 
                                         <!-- Project / Note Details -->
