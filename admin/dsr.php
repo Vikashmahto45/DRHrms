@@ -222,6 +222,17 @@ foreach ($reports as $r) {
         .cam-wrapper { position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; min-height: 250px; }
         #videoFeed, #photoPreview { width: 100%; max-height: 300px; object-fit: cover; display: none; }
         .cam-overlay { position: absolute; bottom: 15px; left:0; right:0; text-align: center; }
+
+        /* Professional Printing */
+        @media print {
+            .sidebar, .top-bar, .no-print, .btn, .modal-overlay, .cam-wrapper { display: none !important; }
+            .main-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .timeline-card { border: none !important; box-shadow: none !important; break-inside: avoid; }
+            .timeline-header { background: #f8fafc !important; border-bottom: 1px solid #e2e8f0 !important; }
+            .timeline-body { display: block !important; border: none !important; }
+            .visit-event::after { display: block !important; }
+            body { background: #fff !important; color: #000 !important; }
+        }
     </style>
 </head>
 <body>
@@ -236,9 +247,10 @@ foreach ($reports as $r) {
                 <p style="color:var(--text-muted)">Track progressive client timelines and secure Live-Camera field visits.</p>
             </div>
             <div style="display:flex;gap:10px;">
-                <button onclick="window.print()" class="btn btn-outline">Print DSR Timeline</button>
+                <a href="../api/crm/export_dsr.php" class="btn btn-outline no-print">📥 Export to Excel</a>
+                <button onclick="window.print()" class="btn btn-outline">🖨️ Print DSR Timeline</button>
                 <?php if ($role === 'sales_person'): ?>
-                    <button class="btn btn-primary" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
+                    <button class="btn btn-primary no-print" onclick="openDsrModal()">+ Log Visit / Submit DSR</button>
                 <?php endif; ?>
             </div>
         </div>
