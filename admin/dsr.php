@@ -174,7 +174,7 @@ if ($role === 'sales_person') {
 
 // Fetch Reports
 if ($role === 'sales_person' || $role === 'staff') {
-    $stmt = $pdo->prepare("SELECT * FROM dsr WHERE user_id = ? ORDER BY visit_date DESC, created_at DESC");
+    $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name FROM dsr d JOIN users u ON d.user_id = u.id WHERE d.user_id = ? ORDER BY d.visit_date DESC, d.created_at DESC");
     $stmt->execute([$uid]);
 } else {
     $sql = "SELECT d.*, u.name as staff_name, c.name as company_name 
@@ -396,8 +396,8 @@ foreach ($reports as $r) {
                                                 </div>
                                                 <div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
                                                     Type: <strong><?= $v['activity_type'] ?></strong>
-                                                    <?php if($role !== 'sales_person'): ?>
-                                                        &bull; By: <strong><?= htmlspecialchars($v['staff_name']) ?></strong>
+                                                    <?php if($role !== 'sales_person' && $role !== 'staff'): ?>
+                                                        &bull; By: <strong><?= htmlspecialchars($v['staff_name'] ?? '') ?></strong>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -411,11 +411,11 @@ foreach ($reports as $r) {
 
                                         <!-- Project / Note Details -->
                                         <div style="margin-bottom:15px;">
-                                            <p style="font-size:0.95rem; color:#1e293b; margin: 0 0 8px 0; line-height:1.6;"><?= nl2br(htmlspecialchars($v['notes'])) ?></p>
-                                            <?php if ($v['project_details']): ?>
+                                            <p style="font-size:0.95rem; color:#1e293b; margin: 0 0 8px 0; line-height:1.6;"><?= nl2br(htmlspecialchars($v['notes'] ?? '')) ?></p>
+                                            <?php if ($v['project_details'] ?? ''): ?>
                                                 <div style="background:var(--bg-main); padding:10px; border-left:3px solid var(--primary-color); border-radius:4px; font-size:0.85rem; color:#475569;">
                                                     <strong>Project Details:</strong><br>
-                                                    <?= nl2br(htmlspecialchars($v['project_details'])) ?>
+                                                    <?= nl2br(htmlspecialchars($v['project_details'] ?? '')) ?>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
