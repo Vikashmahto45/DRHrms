@@ -136,7 +136,7 @@ if (isset($_GET['convert_project'])) {
 }
 
 // Handle Deletion (Admin/Manager only)
-if (isset($_GET['delete_dsr']) && in_array($role, ['admin', 'manager'])) {
+if (isset($_GET['delete_dsr']) && in_array($role, ['admin', 'manager', 'super_admin'])) {
     $dsr_id = (int)$_GET['delete_dsr'];
     try {
         $pdo->beginTransaction();
@@ -387,7 +387,7 @@ foreach ($reports as $r) {
                                                 <?php endif; ?>
                                             </div>
                                             
-                                            <?php if(in_array($role, ['admin', 'manager'])): ?>
+                                            <?php if(in_array($role, ['admin', 'manager', 'super_admin'])): ?>
                                                 <button onclick="confirmDelete(<?= $v['id'] ?>)" class="btn btn-sm btn-outline" style="color:#ef4444; border-color:#ef4444; background:transparent;">🗑️ Delete Report</button>
                                             <?php endif; ?>
                                         </div>
