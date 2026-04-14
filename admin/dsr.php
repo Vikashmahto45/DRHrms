@@ -143,7 +143,7 @@ if (isset($_GET['delete_dsr']) && in_array($role, ['admin', 'manager', 'super_ad
     try {
         $pdo->beginTransaction();
         $pdo->prepare("DELETE FROM dsr_items WHERE dsr_id = ?")->execute([$dsr_id]);
-        $pdo->prepare("DELETE FROM dsr WHERE id = ? AND company_id = ?")->execute([$dsr_id, $cid]);
+        $pdo->prepare("DELETE FROM dsr WHERE id = ? AND company_id IN ($cids_in)")->execute([$dsr_id]);
         $pdo->commit();
         header("Location: dsr.php?msg=Report deleted successfully&msgType=success"); exit();
     } catch (Exception $e) { $pdo->rollBack(); $msg = $e->getMessage(); $msgType = "error"; }
