@@ -825,6 +825,11 @@ function validateAndSubmit() {
     }
     document.getElementById('dsrForm').submit();
 }
+    function confirmDelete(id) {
+        if (confirm("Are you sure you want to delete this report? This action cannot be undone.")) {
+            window.location.href = 'dsr.php?delete_dsr=' + id;
+        }
+    }
 </script>
 </body>
 </html>
