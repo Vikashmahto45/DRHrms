@@ -79,7 +79,7 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
             <div class="map-section"><div id="map"></div></div>
             <div class="timeline-section">
                 <h3 style="margin-top:0; border-bottom: 1px solid var(--glass-border); padding-bottom:10px; margin-bottom:20px;">Daily Activity Log</h3>
-                <div id="timelineContainer" style="color:var(--text-muted); text-align:center; margin-top:50px;">Select an agent and click Load to view activity.</div>
+                <div id="timelineContainer" style="color:var(--text-muted); margin-top:20px;">Select an agent and click Load to view activity.</div>
             </div>
         </div>
 
@@ -156,8 +156,10 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
             <div class="timeline-item start">
                 <span class="timeline-time">${new Date(points[0].timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 <div class="timeline-content">🟢 Route Started</div>
+                <div class="timeline-address" id="addr-start" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
             </div>
         `;
+        queueGeocode(points[0].latitude, points[0].longitude, 'addr-start');
 
         // Add Start Marker
         const startPoint = latLngs[0];
@@ -190,8 +192,10 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
                 <div class="timeline-item stop">
                     <span class="timeline-time">${new Date(stop.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} to ${new Date(stop.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     <div class="timeline-content">🛑 Stopped (${stop.duration_minutes} Mins)</div>
+                    <div class="timeline-address" id="addr-stop-${idx}" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
                 </div>
             `;
+            queueGeocode(stop.latitude, stop.longitude, `addr-stop-${idx}`);
         });
         
         // Add End Marker & Timeline End
@@ -203,10 +207,44 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
             <div class="timeline-item">
                 <span class="timeline-time">${new Date(points[points.length-1].timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 <div class="timeline-content">📍 Latest Known Location</div>
+                <div class="timeline-address" id="addr-end" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
             </div>
         `;
+        queueGeocode(points[points.length-1].latitude, points[points.length-1].longitude, 'addr-end');
         
         document.getElementById('timelineContainer').innerHTML = timelineHtml;
+    }
+
+    // Geocoding Queue System
+    let geocodeQueue = [];
+    let isGeocoding = false;
+
+    function queueGeocode(lat, lng, elementId) {
+        geocodeQueue.push({lat, lng, elementId});
+        if(!isGeocoding) processGeocodeQueue();
+    }
+
+    async function processGeocodeQueue() {
+        if(geocodeQueue.length === 0) { isGeocoding = false; return; }
+        isGeocoding = true;
+        const task = geocodeQueue.shift();
+        
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${task.lat}&lon=${task.lng}`);
+            const data = await response.json();
+            const el = document.getElementById(task.elementId);
+            if(el && data && data.display_name) {
+                el.innerHTML = '📍 ' + data.display_name;
+            } else if (el) {
+                el.innerHTML = '📍 Unknown Location';
+            }
+        } catch (err) {
+            const el = document.getElementById(task.elementId);
+            if(el) el.innerHTML = '📍 Address unavailable';
+        }
+        
+        // Wait 1.1s to respect Nominatim limits
+        setTimeout(processGeocodeQueue, 1100);
     }
 
     function downloadCSV() {
