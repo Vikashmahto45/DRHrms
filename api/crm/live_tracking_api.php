@@ -110,8 +110,8 @@ switch ($action) {
 
     case 'get_route':
         // For Admin Map
-        $target_user_id = $_POST['target_user_id'] ?? $input['target_user_id'] ?? null;
-        $target_date = $_POST['target_date'] ?? $input['target_date'] ?? date('Y-m-d');
+        $target_user_id = $_POST['target_user_id'] ?? json_decode(file_get_contents('php://input'))->target_user_id ?? null;
+        $target_date = $_POST['target_date'] ?? json_decode(file_get_contents('php://input'))->target_date ?? date('Y-m-d');
         
         if (!$target_user_id) {
             echo json_encode(['status' => 'error', 'message' => 'No user specified']);
