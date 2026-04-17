@@ -129,7 +129,7 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
             }
         } catch(e) {
             console.error(e);
-            alert('Failed to connect to tracking API');
+            alert('API Connection Failed. Reason: ' + e.message);
         } finally {
             loader.style.display = 'none';
         }
@@ -167,7 +167,7 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
         L.marker(startPoint, {title: "Start"}).bindPopup("<b>🏁 Route Started</b><br>" + points[0].timestamp).addTo(markerLayer);
         
         // Draw Stops & Populate Timeline
-        stops.forEach(stop => {
+        stops.forEach((stop, idx) => {
             const stopIcon = L.divIcon({
                 className: 'custom-stop-icon',
                 html: `<div style="background-color:#ef4444; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 5px rgba(0,0,0,0.5);"></div>`,
