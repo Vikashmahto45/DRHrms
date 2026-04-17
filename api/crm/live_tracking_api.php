@@ -1,5 +1,6 @@
 <?php
 // /api/crm/live_tracking_api.php
+date_default_timezone_set('Asia/Kolkata');
 require_once '../../includes/auth.php';
 require_once '../../config/database.php';
 

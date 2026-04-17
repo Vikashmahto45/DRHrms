@@ -152,9 +152,10 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
         map.fitBounds(routeLayer.getBounds(), {padding: [50, 50]});
 
         // Setup Timeline UI
+        const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
         let timelineHtml = `
             <div class="timeline-item start">
-                <span class="timeline-time">${new Date(points[0].timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="timeline-time">${new Date(points[0].timestamp).toLocaleTimeString([], timeOptions)}</span>
                 <div class="timeline-content">🟢 Route Started</div>
                 <div class="timeline-address" id="addr-start" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
             </div>
@@ -164,7 +165,7 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
         // Add Start Marker
         const startPoint = latLngs[0];
         const endPoint = latLngs[latLngs.length - 1];
-        L.marker(startPoint, {title: "Start"}).bindPopup("<b>🏁 Route Started</b><br>" + points[0].timestamp).addTo(markerLayer);
+        L.marker(startPoint, {title: "Start"}).bindPopup("<b>🏁 Route Started</b><br>" + new Date(points[0].timestamp).toLocaleString([], {hour12: true})).addTo(markerLayer);
         
         // Draw Stops & Populate Timeline
         stops.forEach((stop, idx) => {
@@ -181,8 +182,8 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
                 <div class="stop-popup">
                     <strong>🛑 Stop Detected</strong><br>
                     Duration: <b>${stop.duration_minutes} Minutes</b><br>
-                    <span style="font-size:0.8rem; color:#6b7280;">From: ${new Date(stop.start_time).toLocaleTimeString()}</span><br>
-                    <span style="font-size:0.8rem; color:#6b7280;">To: ${new Date(stop.end_time).toLocaleTimeString()}</span>
+                    <span style="font-size:0.8rem; color:#6b7280;">From: ${new Date(stop.start_time).toLocaleTimeString([], timeOptions)}</span><br>
+                    <span style="font-size:0.8rem; color:#6b7280;">To: ${new Date(stop.end_time).toLocaleTimeString([], timeOptions)}</span>
                 </div>
             `;
             marker.bindPopup(popupHtml);
@@ -190,7 +191,7 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
             // Timeline
             timelineHtml += `
                 <div class="timeline-item stop">
-                    <span class="timeline-time">${new Date(stop.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} to ${new Date(stop.end_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span class="timeline-time">${new Date(stop.start_time).toLocaleTimeString([], timeOptions)} to ${new Date(stop.end_time).toLocaleTimeString([], timeOptions)}</span>
                     <div class="timeline-content">🛑 Stopped (${stop.duration_minutes} Mins)</div>
                     <div class="timeline-address" id="addr-stop-${idx}" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
                 </div>
@@ -200,12 +201,12 @@ $target_date = $_GET['date'] ?? date('Y-m-d');
         
         // Add End Marker & Timeline End
         L.circleMarker(endPoint, {radius: 8, fillColor: "#10b981", color: "#fff", weight: 2, fillOpacity: 1})
-            .bindPopup("<b>📍 Latest Location</b><br>" + points[points.length-1].timestamp)
+            .bindPopup("<b>📍 Latest Location</b><br>" + new Date(points[points.length-1].timestamp).toLocaleString([], {hour12: true}))
             .addTo(markerLayer);
 
         timelineHtml += `
             <div class="timeline-item">
-                <span class="timeline-time">${new Date(points[points.length-1].timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="timeline-time">${new Date(points[points.length-1].timestamp).toLocaleTimeString([], timeOptions)}</span>
                 <div class="timeline-content">📍 Latest Known Location</div>
                 <div class="timeline-address" id="addr-end" style="font-size:0.75rem; color:#6b7280; margin-top:3px; line-height:1.4;">📍 Fetching address...</div>
             </div>

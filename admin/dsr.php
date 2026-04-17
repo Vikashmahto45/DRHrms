@@ -953,7 +953,7 @@ function sendPing() {
                     body: JSON.stringify({ action: 'ping', session_id: liveSessionId, lat, lng, accuracy: acc })
                 });
             } catch(e) {}
-        }, (err) => { console.warn("Ping failed", err); }, { enableHighAccuracy: true });
+        }, (err) => { console.warn("Ping failed", err); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
     }
 }
 
