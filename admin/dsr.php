@@ -311,6 +311,21 @@ foreach ($reports as $r) {
             <div class="flash-<?= $msgType ?>"><?= $msg ?></div>
         <?php endif; ?>
 
+        <?php if(in_array($role, ['sales_person', 'staff'])): ?>
+        <div class="content-card" style="border-left: 5px solid var(--primary-color); display:flex; justify-content:space-between; align-items:center; background:linear-gradient(to right, #f8fafc, #ffffff); margin-bottom:2rem;">
+            <div>
+                <h3 style="margin:0; font-size:1.2rem;">📡 Live Route Tracking</h3>
+                <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">Continuous background tracking & stop detection. Keep active during field work.</p>
+                <div id="liveTrackStatus" style="font-size:0.8rem; margin-top:8px; font-weight:600; color:#ef4444;">Status: 🔴 Not Tracking</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button id="btnStartLive" class="btn btn-primary" onclick="startLiveTracking()" style="background:#10b981; border-color:#10b981; border-radius:30px;">▶ Start Live Day</button>
+                <button id="btnStopLive" class="btn btn-outline" onclick="stopLiveTracking()" style="display:none; color:#ef4444; border-color:#ef4444; border-radius:30px;">⏹ Stop Session</button>
+                <button id="btnPocket" class="btn btn-outline" onclick="enablePocketMode()" style="display:none; border-radius:30px;" title="Lock Screen for Pocket">🔒 Pocket Mode</button>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="dsr-grid">
             <!-- Left: Stats -->
             <div class="content-card">
@@ -858,6 +873,153 @@ function validateAndSubmit() {
             window.location.href = 'dsr.php?delete_dsr=' + id;
         }
     }
+
+// --- LIVE TRACKING & POCKET MODE LOGIC ---
+let liveSessionId = localStorage.getItem('loom_live_session_id') || null;
+let liveIntervalId = null;
+let wakeLock = null;
+
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active');
+            wakeLock.addEventListener('release', () => {
+                console.log('Screen Wake Lock released');
+            });
+        }
+    } catch (err) {
+        console.error(`${err.name}, ${err.message}`);
+    }
+}
+
+function releaseWakeLock() {
+    if (wakeLock !== null) {
+        wakeLock.release().then(() => { wakeLock = null; });
+    }
+}
+
+async function startLiveTracking() {
+    if(liveSessionId) return; 
+    
+    try {
+        const res = await fetch('../api/crm/live_tracking_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'start_session' })
+        });
+        const data = await res.json();
+        if(data.status === 'success') {
+            liveSessionId = data.session_id;
+            localStorage.setItem('loom_live_session_id', liveSessionId);
+            uiSetTrackingActive(true);
+            requestWakeLock();
+            enablePocketMode();
+            sendPing();
+            liveIntervalId = setInterval(sendPing, 30000); // exactly 30 sec
+        } else {
+            alert('Failed to start tracking session.');
+        }
+    } catch(err) { console.error('Start error', err); }
+}
+
+async function stopLiveTracking() {
+    if(!liveSessionId) return;
+    try {
+        await fetch('../api/crm/live_tracking_api.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action: 'stop_session', session_id: liveSessionId })
+        });
+        liveSessionId = null;
+        localStorage.removeItem('loom_live_session_id');
+        clearInterval(liveIntervalId);
+        releaseWakeLock();
+        uiSetTrackingActive(false);
+    } catch(err) { console.error('Stop error', err); }
+}
+
+function sendPing() {
+    if(!liveSessionId) return;
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const acc = pos.coords.accuracy;
+            try {
+                await fetch('../api/crm/live_tracking_api.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'ping', session_id: liveSessionId, lat, lng, accuracy: acc })
+                });
+            } catch(e) {}
+        }, (err) => { console.warn("Ping failed", err); }, { enableHighAccuracy: true });
+    }
+}
+
+function uiSetTrackingActive(isActive) {
+    const btnStart = document.getElementById('btnStartLive');
+    const btnStop = document.getElementById('btnStopLive');
+    const btnPocket = document.getElementById('btnPocket');
+    const stat = document.getElementById('liveTrackStatus');
+    
+    if(!btnStart) return; // Might not exist for admins
+    
+    if(isActive) {
+        btnStart.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+        btnPocket.style.display = 'inline-block';
+        stat.innerHTML = 'Status: <span style="color:#10b981">🟢 Tracking Active (Leave tab open)</span>';
+    } else {
+        btnStart.style.display = 'inline-block';
+        btnStop.style.display = 'none';
+        btnPocket.style.display = 'none';
+        stat.innerHTML = 'Status: <span style="color:#ef4444">🔴 Not Tracking</span>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (liveSessionId) {
+        uiSetTrackingActive(true);
+        requestWakeLock();
+        liveIntervalId = setInterval(sendPing, 30000);
+    }
+    
+    // Pocket Mode UI Setup
+    const pocketUI = document.createElement('div');
+    pocketUI.id = 'pocketModeUI';
+    pocketUI.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#09090b;z-index:9999999;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:"Inter",sans-serif;text-align:center; user-select:none;touch-action:none;';
+    pocketUI.innerHTML = `
+        <div style="font-size:5rem; color:rgba(255,255,255,0.05); margin-bottom:20px;">🔒</div>
+        <h2 style="color:#a1a1aa; margin:0 0 15px 0;">Pocket Mode Active</h2>
+        <p style="color:#52525b; font-size:1rem; max-width:80%; line-height:1.5;">Screen touches are disabled.<br>GPS tracking is running securely in the background using WakeLock.</p>
+        <button onclick="disablePocketMode()" style="background:transparent; border:2px solid #52525b; color:#a1a1aa; padding:15px 40px; border-radius:30px; font-size:1.1rem; margin-top:60px; cursor:pointer;">Double Tap to Unlock</button>
+    `;
+    document.body.appendChild(pocketUI);
+    
+    // Double tap trick on the button
+    let clicks = 0;
+    pocketUI.querySelector('button').addEventListener('click', (e) => {
+        clicks++;
+        if(clicks === 1) { setTimeout(() => { clicks = 0; }, 500); }
+        else { disablePocketMode(); clicks = 0; }
+        e.preventDefault();
+    });
+});
+
+function enablePocketMode() {
+    if(document.getElementById('pocketModeUI')) document.getElementById('pocketModeUI').style.display = 'flex';
+}
+function disablePocketMode() {
+    if(document.getElementById('pocketModeUI')) document.getElementById('pocketModeUI').style.display = 'none';
+}
+
+// Re-request Wakelock on visibility change (OS sometimes drops it)
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible' && liveSessionId) {
+        requestWakeLock();
+    }
+});
 </script>
 </body>
 </html>

@@ -121,6 +121,11 @@ if ($cid > 0) {
                 <span class="nav-icon">📝</span> <?= $role === 'admin' ? 'DSR Reports' : 'Daily Report (DSR)' ?>
             </a>
             <?php if ($role === 'admin' || $role === 'manager'): ?>
+                <a href="<?= BASE_URL ?>admin/live_tracking_map.php" class="nav-item <?= $current_page==='live_tracking_map.php'?'active':'' ?>">
+                    <span class="nav-icon">🗺️</span> Live Field Map
+                </a>
+            <?php endif; ?>
+            <?php if ($role === 'admin' || $role === 'manager'): ?>
                 <a href="<?= BASE_URL ?>admin/sales_report.php" class="nav-item <?= $current_page==='sales_report.php'?'active':'' ?>">
                     <span class="nav-icon">📈</span> Sales Report
                 </a>
