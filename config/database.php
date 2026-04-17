@@ -1,5 +1,6 @@
 <?php
 // /config/database.php
+date_default_timezone_set('Asia/Kolkata');
 
 // 1. Detect Environment Automatically
 $domain = $_SERVER['HTTP_HOST'] ?? 'localhost';

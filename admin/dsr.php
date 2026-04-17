@@ -946,11 +946,12 @@ function sendPing() {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
             const acc = pos.coords.accuracy;
+            const clientTime = new Date().toISOString();
             try {
                 await fetch('../api/crm/live_tracking_api.php', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'ping', session_id: liveSessionId, lat, lng, accuracy: acc })
+                    body: JSON.stringify({ action: 'ping', session_id: liveSessionId, lat, lng, accuracy: acc, client_time: clientTime })
                 });
             } catch(e) {}
         }, (err) => { console.warn("Ping failed", err); }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });

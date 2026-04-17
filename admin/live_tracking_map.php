@@ -1,5 +1,6 @@
 <?php
 // /admin/live_tracking_map.php
+date_default_timezone_set('Asia/Kolkata');
 require_once '../includes/auth.php';
 require_once '../config/database.php';
 checkAccess(['admin', 'manager', 'super_admin']);

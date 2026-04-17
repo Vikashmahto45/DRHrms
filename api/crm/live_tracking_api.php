@@ -95,7 +95,14 @@ switch ($action) {
         $lat = $_POST['lat'] ?? $input['lat'] ?? null;
         $lng = $_POST['lng'] ?? $input['lng'] ?? null;
         $acc = $_POST['accuracy'] ?? $input['accuracy'] ?? null;
-        $time = date('Y-m-d H:i:s');
+        $client_time = $_POST['client_time'] ?? $input['client_time'] ?? null;
+        
+        // If phone sent its time, use it. Otherwise use server.
+        if ($client_time) {
+            $time = date('Y-m-d H:i:s', strtotime($client_time));
+        } else {
+            $time = date('Y-m-d H:i:s');
+        }
 
         if ($session_id && $lat && $lng) {
             $stmt = $pdo->prepare("INSERT INTO live_tracking_pings (session_id, user_id, latitude, longitude, accuracy, timestamp) VALUES (?, ?, ?, ?, ?, ?)");
