@@ -138,7 +138,7 @@ try {
         )");
         // Seed default professional roles
         $roles = [
-            ['role_key'=>'hq_admin','can_add'=>1,'can_edit'=>1,'can_delete'=>0,'can_update_progress'=>0,'can_verify'=>1,'can_instruction'=>1],
+            ['role_key'=>'hq_admin','can_add'=>1,'can_edit'=>1,'can_delete'=>1,'can_update_progress'=>0,'can_verify'=>1,'can_instruction'=>1],
             ['role_key'=>'hq_manager','can_add'=>1,'can_edit'=>1,'can_delete'=>0,'can_update_progress'=>0,'can_verify'=>1,'can_instruction'=>1],
             ['role_key'=>'branch_admin','can_add'=>1,'can_edit'=>1,'can_delete'=>0,'can_update_progress'=>0,'can_verify'=>0,'can_instruction'=>1],
             ['role_key'=>'branch_manager','can_add'=>1,'can_edit'=>1,'can_delete'=>0,'can_update_progress'=>0,'can_verify'=>0,'can_instruction'=>1],
@@ -146,7 +146,11 @@ try {
             ['role_key'=>'staff','can_add'=>0,'can_edit'=>0,'can_delete'=>0,'can_update_progress'=>1,'can_verify'=>0,'can_instruction'=>0]
         ];
         foreach($roles as $r){
-            $stmt = $pdo->prepare("INSERT IGNORE INTO project_permissions (role_key, can_add, can_edit, can_delete, can_update_progress, can_verify, can_instruction) VALUES (?,?,?,?,?,?,?)");
+            $stmt = $pdo->prepare("INSERT INTO project_permissions (role_key, can_add, can_edit, can_delete, can_update_progress, can_verify, can_instruction) 
+                                   VALUES (?,?,?,?,?,?,?) 
+                                   ON DUPLICATE KEY UPDATE can_add=VALUES(can_add), can_edit=VALUES(can_edit), can_delete=VALUES(can_delete), 
+                                                           can_update_progress=VALUES(can_update_progress), can_verify=VALUES(can_verify), 
+                                                           can_instruction=VALUES(can_instruction)");
             $stmt->execute([$r['role_key'],$r['can_add'],$r['can_edit'],$r['can_delete'],$r['can_update_progress'],$r['can_verify'],$r['can_instruction']]);
         }
     } catch (Exception $e2) {}
