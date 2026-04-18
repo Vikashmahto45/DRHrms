@@ -45,15 +45,16 @@ $company_name = $comp->fetchColumn();
 
 // 5. My Assigned Projects
 $my_projects = [];
-if ($role !== 'staff') {
-    $stmt = $pdo->prepare("
-        SELECT * FROM projects 
-        WHERE sales_person_id = ? AND status NOT IN ('Completed', 'Cancelled') 
-        ORDER BY created_at DESC LIMIT 5
-    ");
-    $stmt->execute([$uid]);
-    $my_projects = $stmt->fetchAll();
-}
+// Staff only see approved (Active) projects. Others see all non-completed.
+$status_filter = ($role === 'staff') ? "AND status = 'Active'" : "AND status NOT IN ('Completed', 'Cancelled')";
+
+$stmt = $pdo->prepare("
+    SELECT * FROM projects 
+    WHERE (sales_person_id = ? OR created_by = ?) $status_filter 
+    ORDER BY created_at DESC LIMIT 5
+");
+$stmt->execute([$uid, $uid]);
+$my_projects = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -139,7 +140,6 @@ if ($role !== 'staff') {
             </div>
 
             <!-- New Assigned Projects Section -->
-            <?php if ($role !== 'staff'): ?>
             <div class="content-card">
                 <div class="card-header">
                     <h2>My Assigned Projects</h2>
@@ -163,7 +163,6 @@ if ($role !== 'staff') {
                     <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
         </div>
 
     </main>

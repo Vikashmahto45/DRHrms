@@ -2,7 +2,7 @@
 // /admin/projects.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess(['admin', 'manager', 'sales_person']);
+checkAccess(['admin', 'manager', 'sales_person', 'staff']);
 
 $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
@@ -221,6 +221,10 @@ $cids_in = implode(',', $branch_ids);
 
 if ($role === 'sales_person') {
     $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? OR p.created_by = ? ORDER BY p.created_at DESC");
+    $stmt->execute([$uid, $uid]);
+} elseif ($role === 'staff') {
+    // Staff only see projects that are ACTIVE and assigned/created by them
+    $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE (p.sales_person_id = ? OR p.created_by = ?) AND p.status = 'Active' ORDER BY p.created_at DESC");
     $stmt->execute([$uid, $uid]);
 } else {
     $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE (p.company_id IN ($cids_in) OR p.branch_id IN ($cids_in)) ORDER BY p.created_at DESC");

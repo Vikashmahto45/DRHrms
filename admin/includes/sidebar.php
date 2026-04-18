@@ -113,10 +113,13 @@ if ($cid > 0) {
             <span class="nav-icon">📊</span> Dashboard
         </a>
 
-        <?php if (in_array($role, ['sales_person', 'admin', 'manager'])): ?>
+        <?php if (in_array($role, ['sales_person', 'admin', 'manager', 'staff'])): ?>
             <a href="projects.php" class="nav-item <?= $current_page==='projects.php'?'active':'' ?>">
                 <span class="nav-icon">🏗️</span> Project Tracking
             </a>
+        <?php endif; ?>
+
+        <?php if (in_array($role, ['sales_person', 'admin', 'manager'])): ?>
             <a href="<?= BASE_URL ?>admin/dsr.php" class="nav-item <?= $current_page==='dsr.php'?'active':'' ?>">
                 <span class="nav-icon">📝</span> <?= $role === 'admin' ? 'DSR Reports' : 'Daily Report (DSR)' ?>
             </a>

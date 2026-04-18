@@ -60,6 +60,16 @@ if (!$p) {
     die("Project not found.");
 }
 
+// Security: Staff can only view ACTIVE projects assigned to them or created by them
+if ($role === 'staff') {
+    if ($p['status'] !== 'Active') {
+        die("This project is awaiting Admin Approval.");
+    }
+    if ($p['sales_person_id'] != $uid && $p['created_by'] != $uid) {
+        die("Access Denied: You are not assigned to this project.");
+    }
+}
+
 // Map Session Role to Permission Role Key
 $role_key = $role;
 if ($role === 'admin' || $role === 'manager') {
