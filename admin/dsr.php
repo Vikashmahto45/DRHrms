@@ -2,7 +2,7 @@
 // /admin/dsr.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess(['sales_person', 'admin', 'manager', 'staff']);
+checkAccess(['sales_person', 'admin', 'manager']);
 ini_set('display_errors', 1); error_reporting(E_ALL);
 
 $uid  = $_SESSION['sa_user_id'] ?? $_SESSION['user_id'] ?? null;
@@ -173,7 +173,7 @@ if ($role === 'sales_person') {
 }
 
 // Fetch Reports
-if ($role === 'sales_person' || $role === 'staff') {
+if ($role === 'sales_person') {
     $stmt = $pdo->prepare("SELECT d.*, u.name as staff_name FROM dsr d JOIN users u ON d.user_id = u.id WHERE d.user_id = ? ORDER BY d.visit_date DESC, d.created_at DESC");
     $stmt->execute([$uid]);
 } else {

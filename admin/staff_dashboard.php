@@ -44,13 +44,16 @@ $comp->execute([$cid]);
 $company_name = $comp->fetchColumn();
 
 // 5. My Assigned Projects
-$my_projects = $pdo->prepare("
-    SELECT * FROM projects 
-    WHERE sales_person_id = ? AND status NOT IN ('Completed', 'Cancelled') 
-    ORDER BY created_at DESC LIMIT 5
-");
-$my_projects->execute([$uid]);
-$my_projects = $my_projects->fetchAll();
+$my_projects = [];
+if ($role !== 'staff') {
+    $stmt = $pdo->prepare("
+        SELECT * FROM projects 
+        WHERE sales_person_id = ? AND status NOT IN ('Completed', 'Cancelled') 
+        ORDER BY created_at DESC LIMIT 5
+    ");
+    $stmt->execute([$uid]);
+    $my_projects = $stmt->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -136,6 +139,7 @@ $my_projects = $my_projects->fetchAll();
             </div>
 
             <!-- New Assigned Projects Section -->
+            <?php if ($role !== 'staff'): ?>
             <div class="content-card">
                 <div class="card-header">
                     <h2>My Assigned Projects</h2>
@@ -159,6 +163,7 @@ $my_projects = $my_projects->fetchAll();
                     <?php endif; ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
 
     </main>

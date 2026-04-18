@@ -2,7 +2,7 @@
 // /admin/projects.php
 require_once '../includes/auth.php';
 require_once '../config/database.php';
-checkAccess(['admin', 'manager', 'sales_person', 'staff']);
+checkAccess(['admin', 'manager', 'sales_person']);
 
 $uid = $_SESSION['user_id'];
 $cid = $_SESSION['company_id'];
@@ -219,7 +219,7 @@ $p_can_verify = (bool)($perms['can_verify'] ?? 0);
 $branch_ids = getAccessibleBranchIds($pdo, $cid);
 $cids_in = implode(',', $branch_ids);
 
-if ($role === 'sales_person' || $role === 'staff') {
+if ($role === 'sales_person') {
     $stmt = $pdo->prepare("SELECT p.*, u.name as salesperson_name FROM projects p LEFT JOIN users u ON p.sales_person_id = u.id WHERE p.sales_person_id = ? OR p.created_by = ? ORDER BY p.created_at DESC");
     $stmt->execute([$uid, $uid]);
 } else {
